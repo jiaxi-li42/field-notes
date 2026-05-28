@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { CalendarIcon, MapPinIcon } from 'lucide-react'
+import { MdIcon } from '@/components/ui/MdIcon'
 import { KingdomBadge } from '@/components/taxonomy/KingdomBadge'
 import { kingdomColor } from '@/lib/utils/kingdom'
 import { formatDate } from '@/lib/utils/date'
@@ -41,12 +41,12 @@ export function RecordingCard({ recording, lang, dict, href }: RecordingCardProp
           </div>
           <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
             <span className="flex items-center gap-1">
-              <CalendarIcon className="size-3" />
+              <MdIcon name="calendar_today" size={14} />
               {formatDate(date, lang)}
             </span>
             {location.placeName && (
               <span className="flex min-w-0 items-center gap-1">
-                <MapPinIcon className="size-3 shrink-0" />
+                <MdIcon name="location_on" size={14} className="shrink-0" />
                 <span className="truncate">{location.placeName}</span>
               </span>
             )}

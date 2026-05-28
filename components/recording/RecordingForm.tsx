@@ -3,7 +3,7 @@
 import { useRef, useState, useTransition } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { ArrowLeftIcon, CalendarIcon, ImagePlusIcon, XIcon } from 'lucide-react'
+import { MdIcon } from '@/components/ui/MdIcon'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -91,7 +91,7 @@ export function RecordingForm({ lang, dict }: RecordingFormProps) {
           className={cn(buttonVariants({ variant: 'ghost', size: 'icon-sm' }))}
           aria-label={dict.nav.collection}
         >
-          <ArrowLeftIcon />
+          <MdIcon name="arrow_back" />
         </Link>
         <h1 className="text-lg font-semibold tracking-tight">{dict.nav.new}</h1>
       </div>
@@ -133,7 +133,7 @@ export function RecordingForm({ lang, dict }: RecordingFormProps) {
               'w-full justify-start font-normal',
             )}
           >
-            <CalendarIcon className="mr-2 size-4" />
+            <MdIcon name="calendar_today" className="mr-2" />
             {formatDate(date, lang)}
           </PopoverTrigger>
           <PopoverContent className="w-auto p-0" align="start">
@@ -186,7 +186,7 @@ export function RecordingForm({ lang, dict }: RecordingFormProps) {
             onClick={() => fileInputRef.current?.click()}
             className="flex h-20 w-full items-center justify-center gap-2 rounded-lg border-2 border-dashed border-border text-sm text-muted-foreground transition-colors hover:border-ring hover:text-foreground"
           >
-            <ImagePlusIcon className="size-5" />
+            <MdIcon name="add_photo_alternate" />
             <span>{dict.recording.photos}</span>
           </button>
         )}
@@ -206,7 +206,7 @@ export function RecordingForm({ lang, dict }: RecordingFormProps) {
                   className="absolute -top-1.5 -right-1.5 flex size-5 items-center justify-center rounded-full bg-foreground text-background"
                   aria-label="Remove photo"
                 >
-                  <XIcon className="size-3" />
+                  <MdIcon name="close" size={14} />
                 </button>
               </div>
             ))}

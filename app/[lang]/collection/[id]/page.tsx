@@ -1,7 +1,7 @@
 import { Fragment } from 'react'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { ArrowLeftIcon, CalendarIcon, MapPinIcon } from 'lucide-react'
+import { MdIcon } from '@/components/ui/MdIcon'
 import { getDictionary } from '@/lib/i18n/dictionaries'
 import { RecordingService } from '@/lib/services/RecordingService'
 import { KingdomBadge } from '@/components/taxonomy/KingdomBadge'
@@ -45,7 +45,7 @@ export default async function RecordingDetailPage({
           className={cn(buttonVariants({ variant: 'ghost', size: 'icon-sm' }))}
           aria-label={dict.nav.collection}
         >
-          <ArrowLeftIcon />
+          <MdIcon name="arrow_back" />
         </Link>
         <KingdomBadge kingdom={species.kingdom} label={kingdomLabel} />
       </div>
@@ -71,12 +71,12 @@ export default async function RecordingDetailPage({
       {/* Date & Location */}
       <div className="space-y-3 py-5">
         <div className="flex items-center gap-2 text-sm">
-          <CalendarIcon className="size-4 text-muted-foreground" />
+          <MdIcon name="calendar_today" className="text-muted-foreground" />
           <span>{formatDate(date, lang)}</span>
         </div>
         {location.placeName && (
           <div className="flex items-center gap-2 text-sm">
-            <MapPinIcon className="size-4 text-muted-foreground" />
+            <MdIcon name="location_on" className="text-muted-foreground" />
             <span>{location.placeName}</span>
           </div>
         )}

@@ -1,7 +1,7 @@
 import { Fragment } from 'react'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { ArrowLeftIcon } from 'lucide-react'
+import { MdIcon } from '@/components/ui/MdIcon'
 import { getDictionary } from '@/lib/i18n/dictionaries'
 import { RecordingService } from '@/lib/services/RecordingService'
 import { KingdomBadge } from '@/components/taxonomy/KingdomBadge'
@@ -49,7 +49,7 @@ export default async function SpeciesPage({
           className={cn(buttonVariants({ variant: 'ghost', size: 'icon-sm' }))}
           aria-label={dict.nav.collection}
         >
-          <ArrowLeftIcon />
+          <MdIcon name="arrow_back" />
         </Link>
         <KingdomBadge kingdom={species.kingdom} label={kingdomLabel} />
       </div>
