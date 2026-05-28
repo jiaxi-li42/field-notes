@@ -1,6 +1,6 @@
 {
   "nav": {
-    "collection": "收藏集",
+    "collection": "Collection",
     "new": "新建记录"
   },
   "kingdoms": {
@@ -22,6 +22,11 @@
     "empty": "尚无记录",
     "empty_hint": "点击 + 新建首个记录",
     "empty_filtered": "此界别暂无记录"
+  },
+  "header": {
+    "search": "搜索",
+    "add": "新增",
+    "switch_view": "切换视图"
   },
   "detail": {
     "taxonomy": "分类",

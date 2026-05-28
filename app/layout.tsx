@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Nanum_Myeongjo, Geist_Mono } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 
 const nanumMyeongjo = Nanum_Myeongjo({
@@ -11,6 +12,14 @@ const nanumMyeongjo = Nanum_Myeongjo({
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
+});
+
+// 思源宋体 CN — variable font, full weight axis exposed via --font-source-han
+const sourceHanSerifCN = localFont({
+  src: "../public/fonts/SourceHanSerifCN-VF.otf",
+  variable: "--font-source-han",
+  display: "swap",
+  weight: "100 900",
 });
 
 export const metadata: Metadata = {
@@ -26,7 +35,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${nanumMyeongjo.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${nanumMyeongjo.variable} ${geistMono.variable} ${sourceHanSerifCN.variable} h-full antialiased`}
     >
       <head>
         {/* Material Symbols — weight-300 outlined icons */}

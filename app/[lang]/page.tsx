@@ -2,6 +2,8 @@ import { getDictionary } from '@/lib/i18n/dictionaries'
 import { RecordingService } from '@/lib/services/RecordingService'
 import { StampCard } from '@/components/recording/StampCard'
 import { CollectionHeader } from '@/components/collection/CollectionHeader'
+import { Button } from '@/components/ui/button'
+import { MdIcon } from '@/components/ui/MdIcon'
 import type { Kingdom } from '@/lib/models/Species'
 import type { Recording } from '@/lib/models/Recording'
 
@@ -53,6 +55,14 @@ export default async function HomePage({
           </div>
         ) : (
           <>
+            {/* ── Toolbar ───────────────────────────────────────────────── */}
+            <div className="flex items-center px-4">
+              <Button variant="ghost" size="sm" className="gap-1 px-2" disabled aria-label="Switch view">
+                <MdIcon name="swap_horiz" />
+                {dict.header.switch_view}
+              </Button>
+            </div>
+
             {/* ── Mobile: 3 columns ─────────────────────────────────────── */}
             <div className="lg:hidden divide-y divide-neutral-200">
               {mobileRows.map((row, rowIdx) => (

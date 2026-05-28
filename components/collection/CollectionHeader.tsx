@@ -21,7 +21,7 @@ const kingdoms: Kingdom[] = ['Animalia', 'Plantae', 'Fungi', 'Protista', 'Monera
 interface CollectionHeaderProps {
   currentKingdom: string | undefined
   lang: string
-  dict: Pick<Dictionary, 'nav' | 'kingdoms' | 'collection'>
+  dict: Pick<Dictionary, 'nav' | 'kingdoms' | 'collection' | 'header'>
 }
 
 export function CollectionHeader({ currentKingdom, lang, dict }: CollectionHeaderProps) {
@@ -59,10 +59,10 @@ export function CollectionHeader({ currentKingdom, lang, dict }: CollectionHeade
             <Button variant="ghost" size="sm" className="gap-1 px-2" disabled aria-label="Search">
               {/* ⚠️ non-shadcn icon: Material Symbols */}
               <MdIcon name="search"/>
-              <span className="text-sm">search</span>
+              {dict.header.search}
             </Button>
             <Link href={addHref} className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }), 'px-2')}>
-              add
+              {dict.header.add}
             </Link>
           </div>
         </div>

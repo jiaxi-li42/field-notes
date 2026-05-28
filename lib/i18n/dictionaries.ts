@@ -18,6 +18,11 @@ export type Dictionary = {
     empty_hint: string
     empty_filtered: string
   }
+  header: {
+    search: string
+    add: string
+    switch_view: string
+  }
   detail: {
     taxonomy: string
     all_recordings: string

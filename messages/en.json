@@ -23,6 +23,11 @@
     "empty_hint": "Tap + to log your first",
     "empty_filtered": "No recordings in this kingdom"
   },
+  "header": {
+    "search": "search",
+    "add": "add",
+    "switch_view": "switch view"
+  },
   "detail": {
     "taxonomy": "Taxonomy",
     "all_recordings": "All recordings of this species"

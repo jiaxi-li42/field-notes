@@ -15,5 +15,6 @@ export default async function LangLayout({
 }) {
   const { lang } = await params
   if (!(locales as readonly string[]).includes(lang)) notFound()
-  return <>{children}</>
+  // data-lang drives font switching: CSS uses [data-lang="zh"] → Noto Serif TC (思源宋體)
+  return <div data-lang={lang}>{children}</div>
 }
