@@ -1,0 +1,46 @@
+{
+  "nav": {
+    "collection": "Collection",
+    "new": "Log recording"
+  },
+  "kingdoms": {
+    "Animalia": "Animal",
+    "Plantae": "Plant",
+    "Fungi": "Fungus",
+    "Protista": "Protist",
+    "Monera": "Bacterium"
+  },
+  "recording": {
+    "date": "Date",
+    "location": "Location",
+    "notes": "Notes",
+    "species": "Species",
+    "photos": "Photos"
+  },
+  "collection": {
+    "filter_all": "All",
+    "empty": "No recordings yet",
+    "empty_hint": "Tap + to log your first",
+    "empty_filtered": "No recordings in this kingdom"
+  },
+  "detail": {
+    "taxonomy": "Taxonomy",
+    "all_recordings": "All recordings of this species"
+  },
+  "actions": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete"
+  },
+  "form": {
+    "species_placeholder": "Search by common or scientific name…",
+    "species_hint": "Type at least 2 characters",
+    "date_placeholder": "Pick a date",
+    "location_placeholder": "e.g. Holyrood Park, Edinburgh",
+    "notes_placeholder": "Behaviour, habitat, count…",
+    "photos_hint": "Up to 10 images",
+    "no_results": "No species found",
+    "searching": "Searching…",
+    "save_error": "Failed to save. Please try again."
+  }
+}

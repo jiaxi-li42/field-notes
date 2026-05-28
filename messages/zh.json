@@ -1,0 +1,46 @@
+{
+  "nav": {
+    "collection": "收藏集",
+    "new": "新建记录"
+  },
+  "kingdoms": {
+    "Animalia": "动物界",
+    "Plantae": "植物界",
+    "Fungi": "真菌界",
+    "Protista": "原生生物界",
+    "Monera": "原核生物界"
+  },
+  "recording": {
+    "date": "日期",
+    "location": "地点",
+    "notes": "备注",
+    "species": "物种",
+    "photos": "照片"
+  },
+  "collection": {
+    "filter_all": "全部",
+    "empty": "尚无记录",
+    "empty_hint": "点击 + 新建首个记录",
+    "empty_filtered": "此界别暂无记录"
+  },
+  "detail": {
+    "taxonomy": "分类",
+    "all_recordings": "该物种的所有记录"
+  },
+  "actions": {
+    "save": "保存",
+    "cancel": "取消",
+    "delete": "删除"
+  },
+  "form": {
+    "species_placeholder": "按俗名或学名搜索…",
+    "species_hint": "至少输入两个字符",
+    "date_placeholder": "选择日期",
+    "location_placeholder": "例：Holyrood Park, Edinburgh",
+    "notes_placeholder": "行为、栖息地、数量…",
+    "photos_hint": "最多10张图片",
+    "no_results": "未找到物种",
+    "searching": "搜索中…",
+    "save_error": "保存失败，请重试。"
+  }
+}
