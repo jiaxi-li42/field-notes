@@ -28,9 +28,24 @@ export default async function HomePage({
   const dict = await getDictionary(lang)
 
   const all = RecordingService.getAll()
-  const recordings = kingdom
+  const filtered = kingdom
     ? all.filter((r) => r.species.kingdom === (kingdom as Kingdom))
     : all
+
+  // Sort by taxonomy so related species sit adjacent on the ring
+  const recordings = [...filtered].sort((a, b) => {
+    const ta = a.species.taxon
+    const tb = b.species.taxon
+    return (
+      ta.kingdom.localeCompare(tb.kingdom) ||
+      ta.phylum.localeCompare(tb.phylum) ||
+      ta.taxonomyClass.localeCompare(tb.taxonomyClass) ||
+      ta.order.localeCompare(tb.order) ||
+      ta.family.localeCompare(tb.family) ||
+      ta.genus.localeCompare(tb.genus) ||
+      ta.species.localeCompare(tb.species)
+    )
+  })
 
   const isEmpty = recordings.length === 0
   const basePath = langPrefix(lang)
@@ -47,6 +62,14 @@ export default async function HomePage({
       (lang === 'zh' ? r.species.vernacularNameZh : r.species.vernacularNameEn) ||
       r.species.canonicalName,
     href: `${basePath}/collection/${r.id}`,
+    // Taxonomy for tree visualisation
+    kingdom: r.species.kingdom,
+    phylum: r.species.taxon.phylum,
+    taxonomyClass: r.species.taxon.taxonomyClass,
+    order: r.species.taxon.order,
+    family: r.species.taxon.family,
+    genus: r.species.taxon.genus,
+    species: r.species.taxon.species,
   }))
 
   return (

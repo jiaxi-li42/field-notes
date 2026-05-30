@@ -4,6 +4,8 @@ import { useState, useEffect, useCallback, useRef, type PointerEvent as RPointer
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { MdIcon } from '@/components/ui/MdIcon'
+// import { RadialTree } from '@/components/collection/RadialTree'
+import type { Kingdom } from '@/lib/models/Species'
 
 // ── Tunables ─────────────────────────────────────────────────────────────────
 // Hover: how many neighbours are affected (1 = immediate neighbour only)
@@ -53,6 +55,14 @@ export interface CircleCardData {
   photoUrl: string | undefined
   displayName: string
   href: string
+  // Taxonomy fields for tree visualisation
+  kingdom: Kingdom
+  phylum: string
+  taxonomyClass: string
+  order: string
+  family: string
+  genus: string
+  species: string
 }
 
 interface CollectionViewProps {
@@ -309,6 +319,8 @@ export function CollectionView({ circleData, switchViewLabel, exitFullscreenLabe
                 </div>
               )
             })}
+
+            {/* ── Radial taxonomy tree — disabled, files kept ────────────── */}
           </div>
 
           {/* ── Caption bar — floats at the bottom of the ring area ─────────── */}
@@ -327,7 +339,7 @@ export function CollectionView({ circleData, switchViewLabel, exitFullscreenLabe
               )}
 
               <div className="w-60 text-center">
-                <p className={`truncate text-sm text-neutral-600 ${lang === 'zh' ? 'font-medium' : 'font-semibold'}`}>
+                <p className={`truncate text-sm ${lang === 'zh' ? 'font-medium' : 'font-semibold'}`}>
                   {captionCard.displayName}
                 </p>
               </div>

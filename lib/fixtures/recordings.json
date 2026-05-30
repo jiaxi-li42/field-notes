@@ -598,5 +598,405 @@
     "photos": [],
     "notes": "Tiny coiled filaments sampled from pond water; identified under microscope.",
     "createdAt": "2026-02-10T14:00:00Z"
+  },
+  {
+    "id": "sighting-026",
+    "species": {
+      "gbifKey": 2481174,
+      "canonicalName": "Erithacus rubecula",
+      "vernacularNameEn": "European Robin",
+      "vernacularNameZh": "欧亚鸲",
+      "kingdom": "Animalia",
+      "taxon": { "kingdom": "Animalia", "phylum": "Chordata", "taxonomyClass": "Aves", "order": "Passeriformes", "family": "Muscicapidae", "genus": "Erithacus", "species": "rubecula" }
+    },
+    "date": "2026-03-18",
+    "location": { "placeName": "Princes Street Gardens, Edinburgh", "lat": 55.9498, "lng": -3.2000 },
+    "photos": [],
+    "notes": "Robin singing from a park bench; remarkably tame.",
+    "createdAt": "2026-03-18T08:30:00Z"
+  },
+  {
+    "id": "sighting-027",
+    "species": {
+      "gbifKey": 2490384,
+      "canonicalName": "Turdus merula",
+      "vernacularNameEn": "Common Blackbird",
+      "vernacularNameZh": "乌鸫",
+      "kingdom": "Animalia",
+      "taxon": { "kingdom": "Animalia", "phylum": "Chordata", "taxonomyClass": "Aves", "order": "Passeriformes", "family": "Turdidae", "genus": "Turdus", "species": "merula" }
+    },
+    "date": "2026-04-14",
+    "location": { "placeName": "Inverleith Park, Edinburgh", "lat": 55.9636, "lng": -3.2184 },
+    "photos": [],
+    "notes": "Male singing at dusk from the top of a rowan; alarm call when cat appeared.",
+    "createdAt": "2026-04-14T20:15:00Z"
+  },
+  {
+    "id": "sighting-028",
+    "species": {
+      "gbifKey": 5232439,
+      "canonicalName": "Cyanistes caeruleus",
+      "vernacularNameEn": "Eurasian Blue Tit",
+      "vernacularNameZh": "蓝山雀",
+      "kingdom": "Animalia",
+      "taxon": { "kingdom": "Animalia", "phylum": "Chordata", "taxonomyClass": "Aves", "order": "Passeriformes", "family": "Paridae", "genus": "Cyanistes", "species": "caeruleus" }
+    },
+    "date": "2026-02-28",
+    "location": { "placeName": "Morningside, Edinburgh", "lat": 55.9225, "lng": -3.2010 },
+    "photos": [],
+    "notes": "Pair investigating the nest box on the garden wall.",
+    "createdAt": "2026-02-28T10:00:00Z"
+  },
+  {
+    "id": "sighting-029",
+    "species": {
+      "gbifKey": 2473010,
+      "canonicalName": "Phalacrocorax carbo",
+      "vernacularNameEn": "Great Cormorant",
+      "vernacularNameZh": "鸬鹚",
+      "kingdom": "Animalia",
+      "taxon": { "kingdom": "Animalia", "phylum": "Chordata", "taxonomyClass": "Aves", "order": "Suliformes", "family": "Phalacrocoracidae", "genus": "Phalacrocorax", "species": "carbo" }
+    },
+    "date": "2026-01-15",
+    "location": { "placeName": "Cramond, Firth of Forth", "lat": 55.9823, "lng": -3.3021 },
+    "photos": [],
+    "notes": "Two cormorants drying wings on the breakwater rocks.",
+    "createdAt": "2026-01-15T13:00:00Z"
+  },
+  {
+    "id": "sighting-030",
+    "species": {
+      "gbifKey": 5220131,
+      "canonicalName": "Meles meles",
+      "vernacularNameEn": "European Badger",
+      "vernacularNameZh": "欧亚獾",
+      "kingdom": "Animalia",
+      "taxon": { "kingdom": "Animalia", "phylum": "Chordata", "taxonomyClass": "Mammalia", "order": "Carnivora", "family": "Mustelidae", "genus": "Meles", "species": "meles" }
+    },
+    "date": "2026-05-02",
+    "location": { "placeName": "Hermitage of Braid, Edinburgh", "lat": 55.9201, "lng": -3.2012 },
+    "photos": [],
+    "notes": "Fresh sett entrance with claw marks; latrine pit nearby.",
+    "createdAt": "2026-05-02T21:30:00Z"
+  },
+  {
+    "id": "sighting-031",
+    "species": {
+      "gbifKey": 2437834,
+      "canonicalName": "Sciurus vulgaris",
+      "vernacularNameEn": "Red Squirrel",
+      "vernacularNameZh": "欧亚红松鼠",
+      "kingdom": "Animalia",
+      "taxon": { "kingdom": "Animalia", "phylum": "Chordata", "taxonomyClass": "Mammalia", "order": "Rodentia", "family": "Sciuridae", "genus": "Sciurus", "species": "vulgaris" }
+    },
+    "date": "2026-03-25",
+    "location": { "placeName": "Perthshire, Scotland", "lat": 56.5900, "lng": -3.7400 },
+    "photos": [],
+    "notes": "Red squirrel feeding on pine cones; ear tufts prominent.",
+    "createdAt": "2026-03-25T09:45:00Z"
+  },
+  {
+    "id": "sighting-032",
+    "species": {
+      "gbifKey": 1043005,
+      "canonicalName": "Pieris brassicae",
+      "vernacularNameEn": "Large White Butterfly",
+      "vernacularNameZh": "大菜粉蝶",
+      "kingdom": "Animalia",
+      "taxon": { "kingdom": "Animalia", "phylum": "Arthropoda", "taxonomyClass": "Insecta", "order": "Lepidoptera", "family": "Pieridae", "genus": "Pieris", "species": "brassicae" }
+    },
+    "date": "2026-05-26",
+    "location": { "placeName": "Royal Botanic Garden, Edinburgh", "lat": 55.9675, "lng": -3.2089 },
+    "photos": [],
+    "notes": "Several adults on lavender; caterpillars on nearby brassica plants.",
+    "createdAt": "2026-05-26T14:20:00Z"
+  },
+  {
+    "id": "sighting-033",
+    "species": {
+      "gbifKey": 1027917,
+      "canonicalName": "Apis mellifera",
+      "vernacularNameEn": "Western Honey Bee",
+      "vernacularNameZh": "西方蜜蜂",
+      "kingdom": "Animalia",
+      "taxon": { "kingdom": "Animalia", "phylum": "Arthropoda", "taxonomyClass": "Insecta", "order": "Hymenoptera", "family": "Apidae", "genus": "Apis", "species": "mellifera" }
+    },
+    "date": "2026-04-20",
+    "location": { "placeName": "The Meadows, Edinburgh", "lat": 55.9411, "lng": -3.1925 },
+    "photos": [],
+    "notes": "Busy foraging on cherry blossom; loaded pollen baskets visible.",
+    "createdAt": "2026-04-20T11:00:00Z"
+  },
+  {
+    "id": "sighting-034",
+    "species": {
+      "gbifKey": 4564218,
+      "canonicalName": "Patella vulgata",
+      "vernacularNameEn": "Common Limpet",
+      "vernacularNameZh": "普通帽贝",
+      "kingdom": "Animalia",
+      "taxon": { "kingdom": "Animalia", "phylum": "Mollusca", "taxonomyClass": "Gastropoda", "order": "Patellida", "family": "Patellidae", "genus": "Patella", "species": "vulgata" }
+    },
+    "date": "2026-02-14",
+    "location": { "placeName": "Cramond, Firth of Forth", "lat": 55.9823, "lng": -3.3021 },
+    "photos": [],
+    "notes": "Hundreds on exposed rock at low tide; distinctive home scars visible.",
+    "createdAt": "2026-02-14T11:30:00Z"
+  },
+  {
+    "id": "sighting-035",
+    "species": {
+      "gbifKey": 4290498,
+      "canonicalName": "Carcinus maenas",
+      "vernacularNameEn": "European Green Crab",
+      "vernacularNameZh": "普通黄道蟹",
+      "kingdom": "Animalia",
+      "taxon": { "kingdom": "Animalia", "phylum": "Arthropoda", "taxonomyClass": "Malacostraca", "order": "Decapoda", "family": "Portunidae", "genus": "Carcinus", "species": "maenas" }
+    },
+    "date": "2026-03-08",
+    "location": { "placeName": "North Berwick, East Lothian", "lat": 56.0583, "lng": -2.7200 },
+    "photos": [],
+    "notes": "Small crab under seaweed in rock pool; greenish-brown carapace.",
+    "createdAt": "2026-03-08T10:15:00Z"
+  },
+  {
+    "id": "sighting-036",
+    "species": {
+      "gbifKey": 2925519,
+      "canonicalName": "Hedera helix",
+      "vernacularNameEn": "Common Ivy",
+      "vernacularNameZh": "常春藤",
+      "kingdom": "Plantae",
+      "taxon": { "kingdom": "Plantae", "phylum": "Tracheophyta", "taxonomyClass": "Magnoliopsida", "order": "Apiales", "family": "Araliaceae", "genus": "Hedera", "species": "helix" }
+    },
+    "date": "2026-01-10",
+    "location": { "placeName": "Dean Cemetery, Edinburgh", "lat": 55.9532, "lng": -3.2252 },
+    "photos": [],
+    "notes": "Dense ivy covering gravestones; berries providing winter food for thrushes.",
+    "createdAt": "2026-01-10T11:00:00Z"
+  },
+  {
+    "id": "sighting-037",
+    "species": {
+      "gbifKey": 3172316,
+      "canonicalName": "Primula vulgaris",
+      "vernacularNameEn": "Common Primrose",
+      "vernacularNameZh": "报春花",
+      "kingdom": "Plantae",
+      "taxon": { "kingdom": "Plantae", "phylum": "Tracheophyta", "taxonomyClass": "Magnoliopsida", "order": "Ericales", "family": "Primulaceae", "genus": "Primula", "species": "vulgaris" }
+    },
+    "date": "2026-03-15",
+    "location": { "placeName": "Roslin Glen, Midlothian", "lat": 55.8553, "lng": -3.1605 },
+    "photos": [],
+    "notes": "First primroses of the year on the shaded bank above the river.",
+    "createdAt": "2026-03-15T10:30:00Z"
+  },
+  {
+    "id": "sighting-038",
+    "species": {
+      "gbifKey": 2874876,
+      "canonicalName": "Ranunculus ficaria",
+      "vernacularNameEn": "Lesser Celandine",
+      "vernacularNameZh": "榛鸡儿",
+      "kingdom": "Plantae",
+      "taxon": { "kingdom": "Plantae", "phylum": "Tracheophyta", "taxonomyClass": "Magnoliopsida", "order": "Ranunculales", "family": "Ranunculaceae", "genus": "Ranunculus", "species": "ficaria" }
+    },
+    "date": "2026-03-01",
+    "location": { "placeName": "Water of Leith, Edinburgh", "lat": 55.9428, "lng": -3.2263 },
+    "photos": [],
+    "notes": "Glossy yellow flowers carpeting the riverbank; heart-shaped leaves.",
+    "createdAt": "2026-03-01T14:00:00Z"
+  },
+  {
+    "id": "sighting-039",
+    "species": {
+      "gbifKey": 5284517,
+      "canonicalName": "Pteridium aquilinum",
+      "vernacularNameEn": "Bracken Fern",
+      "vernacularNameZh": "蕨",
+      "kingdom": "Plantae",
+      "taxon": { "kingdom": "Plantae", "phylum": "Tracheophyta", "taxonomyClass": "Polypodiopsida", "order": "Polypodiales", "family": "Dennstaedtiaceae", "genus": "Pteridium", "species": "aquilinum" }
+    },
+    "date": "2026-05-28",
+    "location": { "placeName": "Arthur's Seat, Edinburgh", "lat": 55.9445, "lng": -3.1615 },
+    "photos": [],
+    "notes": "New fronds unfurling on the hillside; fiddleheads tightly coiled.",
+    "createdAt": "2026-05-28T09:00:00Z"
+  },
+  {
+    "id": "sighting-040",
+    "species": {
+      "gbifKey": 2928864,
+      "canonicalName": "Calluna vulgaris",
+      "vernacularNameEn": "Common Heather",
+      "vernacularNameZh": "帚石楠",
+      "kingdom": "Plantae",
+      "taxon": { "kingdom": "Plantae", "phylum": "Tracheophyta", "taxonomyClass": "Magnoliopsida", "order": "Ericales", "family": "Ericaceae", "genus": "Calluna", "species": "vulgaris" }
+    },
+    "date": "2026-05-22",
+    "location": { "placeName": "Pentland Hills, Edinburgh", "lat": 55.8600, "lng": -3.2500 },
+    "photos": [],
+    "notes": "Vast moorland carpets; not yet flowering but dense green growth.",
+    "createdAt": "2026-05-22T11:30:00Z"
+  },
+  {
+    "id": "sighting-041",
+    "species": {
+      "gbifKey": 3034893,
+      "canonicalName": "Galium aparine",
+      "vernacularNameEn": "Cleavers",
+      "vernacularNameZh": "猪殃殃",
+      "kingdom": "Plantae",
+      "taxon": { "kingdom": "Plantae", "phylum": "Tracheophyta", "taxonomyClass": "Magnoliopsida", "order": "Gentianales", "family": "Rubiaceae", "genus": "Galium", "species": "aparine" }
+    },
+    "date": "2026-04-30",
+    "location": { "placeName": "Dean Village, Edinburgh", "lat": 55.9529, "lng": -3.2213 },
+    "photos": [],
+    "notes": "Scrambling over hedgerow nettles; tiny hooked hairs on stems.",
+    "createdAt": "2026-04-30T12:15:00Z"
+  },
+  {
+    "id": "sighting-042",
+    "species": {
+      "gbifKey": 7960623,
+      "canonicalName": "Trametes versicolor",
+      "vernacularNameEn": "Turkey Tail",
+      "vernacularNameZh": "云芝",
+      "kingdom": "Fungi",
+      "taxon": { "kingdom": "Fungi", "phylum": "Basidiomycota", "taxonomyClass": "Agaricomycetes", "order": "Polyporales", "family": "Polyporaceae", "genus": "Trametes", "species": "versicolor" }
+    },
+    "date": "2026-01-28",
+    "location": { "placeName": "Corstorphine Hill, Edinburgh", "lat": 55.9500, "lng": -3.2736 },
+    "photos": [],
+    "notes": "Concentric zones of colour on a dead log; leathery texture.",
+    "createdAt": "2026-01-28T14:00:00Z"
+  },
+  {
+    "id": "sighting-043",
+    "species": {
+      "gbifKey": 3318363,
+      "canonicalName": "Lycoperdon perlatum",
+      "vernacularNameEn": "Common Puffball",
+      "vernacularNameZh": "网纹马勃",
+      "kingdom": "Fungi",
+      "taxon": { "kingdom": "Fungi", "phylum": "Basidiomycota", "taxonomyClass": "Agaricomycetes", "order": "Agaricales", "family": "Agaricaceae", "genus": "Lycoperdon", "species": "perlatum" }
+    },
+    "date": "2026-05-19",
+    "location": { "placeName": "Hermitage of Braid, Edinburgh", "lat": 55.9201, "lng": -3.2012 },
+    "photos": [],
+    "notes": "Cluster of young puffballs; covered in tiny spines that rub off.",
+    "createdAt": "2026-05-19T15:00:00Z"
+  },
+  {
+    "id": "sighting-044",
+    "species": {
+      "gbifKey": 2527920,
+      "canonicalName": "Cantharellus cibarius",
+      "vernacularNameEn": "Chanterelle",
+      "vernacularNameZh": "鸡油菌",
+      "kingdom": "Fungi",
+      "taxon": { "kingdom": "Fungi", "phylum": "Basidiomycota", "taxonomyClass": "Agaricomycetes", "order": "Cantharellales", "family": "Cantharellaceae", "genus": "Cantharellus", "species": "cibarius" }
+    },
+    "date": "2026-05-24",
+    "location": { "placeName": "Glen Affric, Scottish Highlands", "lat": 57.2648, "lng": -4.9778 },
+    "photos": [],
+    "notes": "Golden funnel-shaped caps under birch and oak; apricot scent.",
+    "createdAt": "2026-05-24T10:00:00Z"
+  },
+  {
+    "id": "sighting-045",
+    "species": {
+      "gbifKey": 3492122,
+      "canonicalName": "Cladonia rangiferina",
+      "vernacularNameEn": "Reindeer Lichen",
+      "vernacularNameZh": "驯鹿石蕊",
+      "kingdom": "Fungi",
+      "taxon": { "kingdom": "Fungi", "phylum": "Ascomycota", "taxonomyClass": "Lecanoromycetes", "order": "Lecanorales", "family": "Cladoniaceae", "genus": "Cladonia", "species": "rangiferina" }
+    },
+    "date": "2026-05-16",
+    "location": { "placeName": "Cairngorms National Park", "lat": 57.0372, "lng": -3.7040 },
+    "photos": [],
+    "notes": "Grey-green mats on peaty ground above the treeline; crunchy underfoot.",
+    "createdAt": "2026-05-16T12:30:00Z"
+  },
+  {
+    "id": "sighting-046",
+    "species": {
+      "gbifKey": 5404237,
+      "canonicalName": "Euglena gracilis",
+      "vernacularNameEn": "Graceful Euglena",
+      "vernacularNameZh": "纤细裸藻",
+      "kingdom": "Protista",
+      "taxon": { "kingdom": "Protista", "phylum": "Euglenozoa", "taxonomyClass": "Euglenophyceae", "order": "Euglenales", "family": "Euglenaceae", "genus": "Euglena", "species": "gracilis" }
+    },
+    "date": "2026-04-12",
+    "location": { "placeName": "Duddingston Loch, Edinburgh", "lat": 55.9371, "lng": -3.1555 },
+    "photos": [],
+    "notes": "Green-tinged water sample; flagellated single cells under microscope.",
+    "createdAt": "2026-04-12T15:00:00Z"
+  },
+  {
+    "id": "sighting-047",
+    "species": {
+      "gbifKey": 5411519,
+      "canonicalName": "Paramecium caudatum",
+      "vernacularNameEn": "Slipper Animalcule",
+      "vernacularNameZh": "尾草履虫",
+      "kingdom": "Protista",
+      "taxon": { "kingdom": "Protista", "phylum": "Ciliophora", "taxonomyClass": "Oligohymenophorea", "order": "Peniculida", "family": "Parameciidae", "genus": "Paramecium", "species": "caudatum" }
+    },
+    "date": "2026-04-12",
+    "location": { "placeName": "Duddingston Loch, Edinburgh", "lat": 55.9371, "lng": -3.1555 },
+    "photos": [],
+    "notes": "Slipper-shaped cells darting through hay infusion; cilia beating visibly.",
+    "createdAt": "2026-04-12T15:30:00Z"
+  },
+  {
+    "id": "sighting-048",
+    "species": {
+      "gbifKey": 5284637,
+      "canonicalName": "Amoeba proteus",
+      "vernacularNameEn": "Common Amoeba",
+      "vernacularNameZh": "变形虫",
+      "kingdom": "Protista",
+      "taxon": { "kingdom": "Protista", "phylum": "Amoebozoa", "taxonomyClass": "Tubulinea", "order": "Euamoebida", "family": "Amoebidae", "genus": "Amoeba", "species": "proteus" }
+    },
+    "date": "2026-04-15",
+    "location": { "placeName": "Water of Leith, Edinburgh", "lat": 55.9428, "lng": -3.2263 },
+    "photos": [],
+    "notes": "Single large amoeba extending pseudopods around diatom prey.",
+    "createdAt": "2026-04-15T16:00:00Z"
+  },
+  {
+    "id": "sighting-049",
+    "species": {
+      "gbifKey": 3261403,
+      "canonicalName": "Nostoc commune",
+      "vernacularNameEn": "Star Jelly",
+      "vernacularNameZh": "普通念珠藻",
+      "kingdom": "Monera",
+      "taxon": { "kingdom": "Monera", "phylum": "Cyanobacteria", "taxonomyClass": "Cyanophyceae", "order": "Nostocales", "family": "Nostocaceae", "genus": "Nostoc", "species": "commune" }
+    },
+    "date": "2026-03-20",
+    "location": { "placeName": "Arthur's Seat, Edinburgh", "lat": 55.9445, "lng": -3.1615 },
+    "photos": [],
+    "notes": "Gelatinous dark-green blobs on path after rain; rubbery texture.",
+    "createdAt": "2026-03-20T09:30:00Z"
+  },
+  {
+    "id": "sighting-050",
+    "species": {
+      "gbifKey": 3221940,
+      "canonicalName": "Anabaena circinalis",
+      "vernacularNameEn": "Circular Anabaena",
+      "vernacularNameZh": "卷曲鱼腥藻",
+      "kingdom": "Monera",
+      "taxon": { "kingdom": "Monera", "phylum": "Cyanobacteria", "taxonomyClass": "Cyanophyceae", "order": "Nostocales", "family": "Nostocaceae", "genus": "Anabaena", "species": "circinalis" }
+    },
+    "date": "2026-05-27",
+    "location": { "placeName": "Loch Lomond", "lat": 56.1167, "lng": -4.5667 },
+    "photos": [],
+    "notes": "Green surface scum in sheltered bay; circular filament coils under lens.",
+    "createdAt": "2026-05-27T10:00:00Z"
   }
 ]
