@@ -1,5 +1,5 @@
 import { Badge } from '@/components/ui/badge'
-import { kingdomColor } from '@/lib/utils/kingdom'
+import { kingdomColor, kingdomForeground } from '@/lib/utils/kingdom'
 import type { Kingdom } from '@/lib/models/Species'
 
 interface KingdomBadgeProps {
@@ -12,7 +12,7 @@ export function KingdomBadge({ kingdom, label, className }: KingdomBadgeProps) {
   return (
     <Badge
       className={className}
-      style={{ backgroundColor: kingdomColor(kingdom), color: 'white', borderColor: 'transparent' }}
+      style={{ backgroundColor: kingdomColor(kingdom), color: kingdomForeground(kingdom), borderColor: 'transparent' }}
     >
       {label}
     </Badge>

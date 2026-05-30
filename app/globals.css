@@ -84,11 +84,11 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
-  --kingdom-animal: oklch(0.70 0.18 25);
-  --kingdom-plant: oklch(0.62 0.14 145);
-  --kingdom-fungi: oklch(0.74 0.14 75);
-  --kingdom-protist: oklch(0.65 0.12 195);
-  --kingdom-monera: oklch(0.62 0.14 290);
+  --kingdom-animal: oklch(0.585 0.172 33.7);
+  --kingdom-plant: oklch(0.566 0.138 150.8);
+  --kingdom-fungi: oklch(0.792 0.143 85.1);
+  --kingdom-protist: oklch(0.521 0.133 252.1);
+  --kingdom-monera: oklch(0.770 0.032 245.2);
 }
 
 @layer base {
@@ -97,6 +97,7 @@
   }
   body {
     @apply bg-background text-foreground;
+    overflow-x: hidden;
   }
   html {
     @apply font-sans;

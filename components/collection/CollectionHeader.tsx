@@ -15,6 +15,7 @@ import { kingdomColor } from '@/lib/utils/kingdom'
 import { cn } from '@/lib/utils'
 import type { Kingdom } from '@/lib/models/Species'
 import type { Dictionary } from '@/lib/i18n/dictionaries'
+import { langPrefix } from '@/lib/utils/i18n'
 
 const kingdoms: Kingdom[] = ['Animalia', 'Plantae', 'Fungi', 'Protista', 'Monera']
 
@@ -27,8 +28,9 @@ interface CollectionHeaderProps {
 export function CollectionHeader({ currentKingdom, lang, dict }: CollectionHeaderProps) {
   const router = useRouter()
   const [open, setOpen] = useState(false)
-  const base = lang === 'zh' ? '/zh' : '/'
-  const addHref = `${lang === 'zh' ? '/zh' : ''}/collection/new`
+  const prefix = langPrefix(lang)
+  const base = prefix || '/'
+  const addHref = `${prefix}/collection/new`
 
   function selectKingdom(k: Kingdom | null) {
     setOpen(false)
@@ -39,7 +41,7 @@ export function CollectionHeader({ currentKingdom, lang, dict }: CollectionHeade
     <>
       {/* Fixed header — full viewport width, centred content within max-w-sm */}
       <header className="fixed left-0 right-0 top-0 z-50 bg-neutral-100">
-        <div className="mx-auto flex max-w-sm lg:max-w-2xl items-center justify-between px-4 py-6">
+        <div className="mx-auto flex max-w-sm md:max-w-2xl items-center justify-between px-4 py-6">
           {/* Left — title + filter */}
           <div className="flex items-center gap-1">
             <h1 className="text-2xl tracking-tight">{dict.nav.collection}</h1>

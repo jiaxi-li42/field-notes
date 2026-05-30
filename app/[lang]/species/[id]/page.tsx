@@ -9,6 +9,8 @@ import { RecordingCard } from '@/components/recording/RecordingCard'
 import { buttonVariants } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { cn } from '@/lib/utils'
+import { langPrefix } from '@/lib/utils/i18n'
+import { buildTaxonRows } from '@/lib/utils/taxonomy'
 
 export default async function SpeciesPage({
   params,
@@ -26,19 +28,11 @@ export default async function SpeciesPage({
   if (recordings.length === 0) notFound()
 
   const { species } = recordings[0]
-  const base = lang === 'zh' ? '/zh' : '/'
+  const base = langPrefix(lang) || '/'
   const vernacular = lang === 'zh' ? species.vernacularNameZh : species.vernacularNameEn
   const kingdomLabel = dict.kingdoms[species.kingdom] ?? species.kingdom
 
-  const taxonRows: [string, string][] = [
-    ['Kingdom', species.taxon.kingdom],
-    ['Phylum', species.taxon.phylum],
-    ['Class', species.taxon.taxonomyClass],
-    ['Order', species.taxon.order],
-    ['Family', species.taxon.family],
-    ['Genus', species.taxon.genus],
-    ['Species', species.taxon.species],
-  ].filter(([, v]) => v)
+  const taxonRows = buildTaxonRows(species.taxon)
 
   return (
     <main className="container mx-auto max-w-lg px-4 pt-6 pb-12">

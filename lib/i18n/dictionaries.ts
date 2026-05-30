@@ -22,6 +22,7 @@ export type Dictionary = {
     search: string
     add: string
     switch_view: string
+    exit_fullscreen: string
   }
   detail: {
     taxonomy: string

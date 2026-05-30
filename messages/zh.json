@@ -26,7 +26,8 @@
   "header": {
     "search": "搜索",
     "add": "新增",
-    "switch_view": "切换视图"
+    "switch_view": "切换视图",
+    "exit_fullscreen": "退出全屏"
   },
   "detail": {
     "taxonomy": "分类",

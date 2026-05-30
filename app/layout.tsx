@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Nanum_Myeongjo, Geist_Mono } from "next/font/google";
 import localFont from "next/font/local";
 import "./globals.css";
+import { OverlayScrollbarsInit } from "@/components/shell/OverlayScrollbarsInit";
 
 const nanumMyeongjo = Nanum_Myeongjo({
   variable: "--font-nanum",
@@ -44,7 +45,10 @@ export default function RootLayout({
           href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"
         />
       </head>
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        <OverlayScrollbarsInit />
+        {children}
+      </body>
     </html>
   );
 }

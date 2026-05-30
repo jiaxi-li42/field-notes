@@ -2,10 +2,10 @@ import { getDictionary } from '@/lib/i18n/dictionaries'
 import { RecordingService } from '@/lib/services/RecordingService'
 import { StampCard } from '@/components/recording/StampCard'
 import { CollectionHeader } from '@/components/collection/CollectionHeader'
-import { Button } from '@/components/ui/button'
-import { MdIcon } from '@/components/ui/MdIcon'
+import { CollectionView } from '@/components/collection/CollectionView'
 import type { Kingdom } from '@/lib/models/Species'
 import type { Recording } from '@/lib/models/Recording'
+import { langPrefix } from '@/lib/utils/i18n'
 
 // Pseudo-random scatter angles (degrees). Cycle through these per card position.
 const STAMP_ROTATIONS = [-2.3, 1.8, -1.2, 2.7, -0.7, 1.4, -2.1, 0.9, -1.6, 2.4, -0.4, 1.1]
@@ -33,19 +33,30 @@ export default async function HomePage({
     : all
 
   const isEmpty = recordings.length === 0
-  const basePath = lang === 'zh' ? '/zh' : ''
+  const basePath = langPrefix(lang)
 
   // Server-side row chunking per breakpoint so divide-y separators land correctly
   const mobileRows = chunkBy(recordings, 3)   // 3-col layout
   const desktopRows = chunkBy(recordings, 5)  // 5-col layout
 
+  // Slim serialisable data for the client-side circle view
+  const circleData = recordings.map((r) => ({
+    id: r.id,
+    photoUrl: r.photos[0]?.url,
+    displayName:
+      (lang === 'zh' ? r.species.vernacularNameZh : r.species.vernacularNameEn) ||
+      r.species.canonicalName,
+    href: `${basePath}/collection/${r.id}`,
+  }))
+
   return (
     <main className="min-h-screen bg-neutral-100">
       <CollectionHeader currentKingdom={kingdom} lang={lang} dict={dict} />
 
-      <div className="mx-auto max-w-sm lg:max-w-2xl pt-20 pb-4">
+      {/* pt-20 clears the fixed header; max-width is handled per-view inside CollectionView */}
+      <div className="pt-20">
         {isEmpty ? (
-          <div className="flex flex-col items-center justify-center px-4 py-20 text-center">
+          <div className="mx-auto max-w-sm md:max-w-2xl flex flex-col items-center justify-center px-4 py-20 text-center">
             <p className="text-sm text-muted-foreground">
               {kingdom ? dict.collection.empty_filtered : dict.collection.empty}
             </p>
@@ -54,17 +65,9 @@ export default async function HomePage({
             )}
           </div>
         ) : (
-          <>
-            {/* ── Toolbar ───────────────────────────────────────────────── */}
-            <div className="flex items-center px-4">
-              <Button variant="ghost" size="sm" className="gap-1 px-2" disabled aria-label="Switch view">
-                <MdIcon name="swap_horiz" />
-                {dict.header.switch_view}
-              </Button>
-            </div>
-
-            {/* ── Mobile: 3 columns ─────────────────────────────────────── */}
-            <div className="lg:hidden divide-y divide-neutral-200">
+          <CollectionView circleData={circleData} switchViewLabel={dict.header.switch_view} exitFullscreenLabel={dict.header.exit_fullscreen} lang={lang}>
+            {/* ── Mobile: 3 columns ───────────────────────────────────────── */}
+            <div className="md:hidden divide-y divide-neutral-200">
               {mobileRows.map((row, rowIdx) => (
                 <div key={rowIdx} className="grid grid-cols-3 gap-x-2 gap-y-4 p-4">
                   {row.map((r: Recording, colIdx) => (
@@ -80,8 +83,8 @@ export default async function HomePage({
               ))}
             </div>
 
-            {/* ── Desktop: 5 columns ────────────────────────────────────── */}
-            <div className="hidden lg:block divide-y divide-neutral-200">
+            {/* ── Desktop: 5 columns ──────────────────────────────────────── */}
+            <div className="hidden md:block divide-y divide-neutral-200">
               {desktopRows.map((row, rowIdx) => (
                 <div key={rowIdx} className="grid grid-cols-5 gap-x-2 gap-y-4 p-4">
                   {row.map((r: Recording, colIdx) => (
@@ -96,7 +99,7 @@ export default async function HomePage({
                 </div>
               ))}
             </div>
-          </>
+          </CollectionView>
         )}
       </div>
     </main>

@@ -26,7 +26,8 @@
   "header": {
     "search": "search",
     "add": "add",
-    "switch_view": "switch view"
+    "switch_view": "switch view",
+    "exit_fullscreen": "exit fullscreen"
   },
   "detail": {
     "taxonomy": "Taxonomy",
