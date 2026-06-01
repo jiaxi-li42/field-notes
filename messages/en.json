@@ -29,6 +29,15 @@
     "switch_view": "switch view",
     "exit_fullscreen": "exit fullscreen"
   },
+  "ranks": {
+    "kingdom": "Kingdom",
+    "phylum": "Phylum",
+    "class": "Class",
+    "order": "Order",
+    "family": "Family",
+    "genus": "Genus",
+    "species": "Species"
+  },
   "detail": {
     "taxonomy": "Taxonomy",
     "all_recordings": "All recordings of this species"

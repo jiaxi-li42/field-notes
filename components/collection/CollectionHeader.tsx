@@ -46,7 +46,7 @@ export function CollectionHeader({ currentKingdom, lang, dict }: CollectionHeade
           <div className="flex items-center gap-1">
             <h1 className="text-2xl tracking-tight">{dict.nav.collection}</h1>
             <Button
-              variant="ghost"
+              variant={currentKingdom ? 'outline' : 'ghost'}
               size="icon-sm"
               onClick={() => setOpen(true)}
               aria-label="Filter by kingdom"

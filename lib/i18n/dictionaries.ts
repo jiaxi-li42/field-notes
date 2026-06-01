@@ -24,6 +24,15 @@ export type Dictionary = {
     switch_view: string
     exit_fullscreen: string
   }
+  ranks: {
+    kingdom: string
+    phylum: string
+    class: string
+    order: string
+    family: string
+    genus: string
+    species: string
+  }
   detail: {
     taxonomy: string
     all_recordings: string

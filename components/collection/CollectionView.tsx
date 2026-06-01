@@ -4,7 +4,8 @@ import { useState, useEffect, useCallback, useRef, type PointerEvent as RPointer
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { MdIcon } from '@/components/ui/MdIcon'
-// import { RadialTree } from '@/components/collection/RadialTree'
+import { RadialTree } from '@/components/collection/RadialTree'
+// import { TaxonomyArc } from '@/components/collection/TaxonomyArc'
 import type { Kingdom } from '@/lib/models/Species'
 
 // ── Tunables ─────────────────────────────────────────────────────────────────
@@ -68,6 +69,10 @@ export interface CircleCardData {
 interface CollectionViewProps {
   /** Plain-object card data for the circle layout (serialisable across the server boundary). */
   circleData: CircleCardData[]
+  /** Active kingdom filter — highlights matching nodes in the tree instead of hiding cards. */
+  activeKingdom?: Kingdom
+  /** Localised taxonomy rank labels (phylum, class, etc.) for the tree hover label. */
+  rankLabels: Record<string, string>
   switchViewLabel: string
   exitFullscreenLabel: string
   lang: string
@@ -76,7 +81,7 @@ interface CollectionViewProps {
 }
 
 // ── Component ────────────────────────────────────────────────────────────────
-export function CollectionView({ circleData, switchViewLabel, exitFullscreenLabel, lang, children }: CollectionViewProps) {
+export function CollectionView({ circleData, activeKingdom, rankLabels, switchViewLabel, exitFullscreenLabel, lang, children }: CollectionViewProps) {
   const [view, setView] = useState<'grid' | 'circle'>('grid')
 
   // ── Interaction state ──────────────────────────────────────────────────────
@@ -147,7 +152,7 @@ export function CollectionView({ circleData, switchViewLabel, exitFullscreenLabe
     const handleKey = (e: KeyboardEvent) => {
       if (e.key === 'ArrowRight') { setIdx(prev => prev + 1); e.preventDefault() }
       else if (e.key === 'ArrowLeft') { setIdx(prev => prev - 1); e.preventDefault() }
-      else if (e.key === 'Escape') { setZoomed(false); setHovered(null); e.preventDefault() }
+      else if (e.key === 'Escape') { setZoomed(false); setHovered(null); setIdx(0); e.preventDefault() }
     }
     window.addEventListener('keydown', handleKey)
     return () => window.removeEventListener('keydown', handleKey)
@@ -218,7 +223,7 @@ export function CollectionView({ circleData, switchViewLabel, exitFullscreenLabe
             variant="ghost"
             size="sm"
             className="gap-1 px-2"
-            onClick={() => { setZoomed(false); setHovered(null) }}
+            onClick={() => { setZoomed(false); setHovered(null); setIdx(0) }}
             aria-label="Exit fullscreen"
           >
             <MdIcon name="fullscreen_exit" />
@@ -320,7 +325,20 @@ export function CollectionView({ circleData, switchViewLabel, exitFullscreenLabe
               )
             })}
 
-            {/* ── Radial taxonomy tree — disabled, files kept ────────────── */}
+            {/* ── Taxonomy diagram ─────────────────────────────────────── */}
+            <RadialTree
+              cards={circleData}
+              containerSize={containerSize}
+              innerRadius={innerRadius}
+              currentScale={currentScale}
+              currentCenter={currentCenter}
+              angleStep={angleStep}
+              zoomed={zoomed}
+              hoveredCardIndex={hovered}
+              activeKingdom={activeKingdom}
+              rankLabels={rankLabels}
+              idx={idx}
+            />
           </div>
 
           {/* ── Caption bar — floats at the bottom of the ring area ─────────── */}
@@ -339,7 +357,7 @@ export function CollectionView({ circleData, switchViewLabel, exitFullscreenLabe
               )}
 
               <div className="w-60 text-center">
-                <p className={`truncate text-sm ${lang === 'zh' ? 'font-medium' : 'font-semibold'}`}>
+                <p className={`truncate text-sm font-semibold`}>
                   {captionCard.displayName}
                 </p>
               </div>

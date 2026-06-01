@@ -32,7 +32,7 @@ export default async function SpeciesPage({
   const vernacular = lang === 'zh' ? species.vernacularNameZh : species.vernacularNameEn
   const kingdomLabel = dict.kingdoms[species.kingdom] ?? species.kingdom
 
-  const taxonRows = buildTaxonRows(species.taxon)
+  const taxonRows = buildTaxonRows(species.taxon, dict.ranks)
 
   return (
     <main className="container mx-auto max-w-lg px-4 pt-6 pb-12">
@@ -67,7 +67,7 @@ export default async function SpeciesPage({
           {taxonRows.map(([label, value]) => (
             <Fragment key={label}>
               <dt className="text-muted-foreground">{label}</dt>
-              <dd className={label === 'Genus' || label === 'Species' ? 'italic' : ''}>
+              <dd className={label === dict.ranks.genus || label === dict.ranks.species ? 'italic' : ''}>
                 {value}
               </dd>
             </Fragment>

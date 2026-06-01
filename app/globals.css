@@ -118,11 +118,21 @@
    Rules live in @layer base so Tailwind always emits them regardless of scanning. */
 @layer base {
   [data-lang="zh"] {
-    font-family: var(--font-source-han), serif;
+    font-family: var(--font-nanum), var(--font-source-han), serif;
   }
   [data-lang="zh"] h1 {
     font-family: var(--font-nanum), serif;
   }
+}
+
+/* In zh mode, bold/semibold → normal so CJK strokes don't over-thicken.
+   Weight 400 is used because Nanum Myeongjo (Latin fallback) only ships
+   400/700/800 — 500 would be synthesized from 400 and look identical.
+   Source Han Serif CN (variable font) renders 400 cleanly.
+   Unlayered so it overrides Tailwind's @layer utilities. */
+[data-lang="zh"] .font-bold,
+[data-lang="zh"] .font-semibold {
+  font-weight: 500;
 }
 
 /* Stamp card wrapper: carries random rotation via --stamp-r and lifts on hover.

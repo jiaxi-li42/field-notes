@@ -28,12 +28,9 @@ export default async function HomePage({
   const dict = await getDictionary(lang)
 
   const all = RecordingService.getAll()
-  const filtered = kingdom
-    ? all.filter((r) => r.species.kingdom === (kingdom as Kingdom))
-    : all
 
   // Sort by taxonomy so related species sit adjacent on the ring
-  const recordings = [...filtered].sort((a, b) => {
+  const recordings = [...all].sort((a, b) => {
     const ta = a.species.taxon
     const tb = b.species.taxon
     return (
@@ -50,9 +47,14 @@ export default async function HomePage({
   const isEmpty = recordings.length === 0
   const basePath = langPrefix(lang)
 
+  // Grid view still filters by kingdom; circle view shows all with highlights
+  const gridRecordings = kingdom
+    ? recordings.filter((r) => r.species.kingdom === (kingdom as Kingdom))
+    : recordings
+
   // Server-side row chunking per breakpoint so divide-y separators land correctly
-  const mobileRows = chunkBy(recordings, 3)   // 3-col layout
-  const desktopRows = chunkBy(recordings, 5)  // 5-col layout
+  const mobileRows = chunkBy(gridRecordings, 3)   // 3-col layout
+  const desktopRows = chunkBy(gridRecordings, 5)  // 5-col layout
 
   // Slim serialisable data for the client-side circle view
   const circleData = recordings.map((r) => ({
@@ -88,7 +90,7 @@ export default async function HomePage({
             )}
           </div>
         ) : (
-          <CollectionView circleData={circleData} switchViewLabel={dict.header.switch_view} exitFullscreenLabel={dict.header.exit_fullscreen} lang={lang}>
+          <CollectionView circleData={circleData} activeKingdom={kingdom as Kingdom | undefined} rankLabels={dict.ranks} switchViewLabel={dict.header.switch_view} exitFullscreenLabel={dict.header.exit_fullscreen} lang={lang}>
             {/* ── Mobile: 3 columns ───────────────────────────────────────── */}
             <div className="md:hidden divide-y divide-neutral-200">
               {mobileRows.map((row, rowIdx) => (

@@ -29,6 +29,15 @@
     "switch_view": "切换视图",
     "exit_fullscreen": "退出全屏"
   },
+  "ranks": {
+    "kingdom": "界",
+    "phylum": "门",
+    "class": "纲",
+    "order": "目",
+    "family": "科",
+    "genus": "属",
+    "species": "种"
+  },
   "detail": {
     "taxonomy": "分类",
     "all_recordings": "该物种的所有记录"

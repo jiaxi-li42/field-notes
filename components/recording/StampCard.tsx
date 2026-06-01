@@ -37,8 +37,8 @@ export function StampCard({ recording, lang, href, rotate = 0 }: StampCardProps)
 
           {/* Species name — max 2 lines.
               en: font-bold (700) with NanumMyeongjo
-              zh: font-normal (400) suits Source Han Serif CN at small sizes */}
-          <p className={`pr-2 pb-0.5 line-clamp-2 text-xs leading-tight ${lang === 'zh' ? 'font-medium' : 'font-bold'}`}>
+              zh: auto-downgraded to medium (500) via globals.css */}
+          <p className="pr-2 pb-0.5 line-clamp-2 text-xs font-bold leading-tight">
             {displayName}
           </p>
         </div>
