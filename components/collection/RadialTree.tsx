@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState, useCallback, useEffect } from 'react'
+import { useMemo, useState, useCallback, useEffect, useRef } from 'react'
 import { hierarchy, tree } from 'd3-hierarchy'
 import { buildTaxonTree, type TaxonTreeNode } from '@/lib/utils/buildTaxonTree'
 import { kingdomColor } from '@/lib/utils/kingdom'
@@ -9,9 +9,8 @@ import type { Kingdom } from '@/lib/models/Species'
 import type { HierarchyPointNode } from 'd3-hierarchy'
 
 // ── Tunables ────────────────────────────────────────────────────────────────
-// Node size — area in px² (circle: r = √(size/π)).
-const NODE_SIZE = 4
-const NODE_RADIUS = Math.sqrt(NODE_SIZE / Math.PI)
+// Node radius in px (derived from area 4 px²).
+const NODE_RADIUS = Math.sqrt(4 / Math.PI)
 // Hit area radius (px) — invisible circle for easier hovering.
 const HIT_RADIUS = 8
 // Neutral colours (shadcn CSS vars).
@@ -28,8 +27,10 @@ const INNER_RADIUS_RATIO = 0.7
 // Depth 1 = kingdom, 2 = phylum, …, 6 = genus, 7 = species (leaves, not rendered).
 // Index 0 is skipped (root is hidden). Equal values = even spacing.
 const RING_WEIGHTS = [1, 1, 1, 1, 1, 1, 1]
+// Depth ring: outline circle at the hovered node's depth radius.
+const DEPTH_RING_STROKE = 1
 // Hover label offset from node (screen px).
-const LABEL_OFFSET = 12
+const LABEL_OFFSET = 16
 
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
@@ -169,7 +170,20 @@ export function RadialTree({
   // Priority: pinned > hover > ring card hover > kingdom filter.
   const highlightSource = pinnedNode ?? hoveredNode
   const highlightedIds = useMemo(() => {
-    if (highlightSource) return collectDescendantIds(highlightSource)
+    if (highlightSource) {
+      const ids = collectDescendantIds(highlightSource)
+      // Hover only: also highlight same-depth nodes that share the kingdom.
+      if (!pinnedNode && layoutRoot && highlightSource.data.kingdom) {
+        const depth = highlightSource.depth
+        const kingdom = highlightSource.data.kingdom
+        for (const node of layoutRoot.descendants()) {
+          if (node.depth === depth && node.data.kingdom === kingdom) {
+            ids.add(nodeId(node))
+          }
+        }
+      }
+      return ids
+    }
     if (hoveredCardIndex !== null) {
       const leaf = nodeMap.get(hoveredCardIndex)
       if (leaf) return collectAncestorIds(leaf)
@@ -182,7 +196,7 @@ export function RadialTree({
       return ids
     }
     return new Set<string>()
-  }, [highlightSource, hoveredCardIndex, nodeMap, activeKingdom, layoutRoot])
+  }, [highlightSource, pinnedNode, hoveredCardIndex, nodeMap, activeKingdom, layoutRoot])
 
   const highlightKingdom = highlightSource?.data.kingdom
     ?? (hoveredCardIndex !== null ? cards[hoveredCardIndex]?.kingdom : undefined)
@@ -190,11 +204,17 @@ export function RadialTree({
   const highlightColor = highlightKingdom ? kingdomColor(highlightKingdom) : NEUTRAL_NODE
 
   // ── Event handlers ────────────────────────────────────────────────────────
+  // Debounce leave so the depth ring stays visible while moving between nodes.
+  const leaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const handleNodeEnter = useCallback((node: HierarchyPointNode<TaxonTreeNode>) => {
+    if (leaveTimer.current) { clearTimeout(leaveTimer.current); leaveTimer.current = null }
     setHoveredNode(node)
   }, [])
   const handleNodeLeave = useCallback(() => {
-    setHoveredNode(null)
+    leaveTimer.current = setTimeout(() => {
+      setHoveredNode(null)
+      leaveTimer.current = null
+    }, 300)
   }, [])
   const handleNodeClick = useCallback((e: React.MouseEvent, node: HierarchyPointNode<TaxonTreeNode>) => {
     e.stopPropagation()
@@ -229,6 +249,17 @@ export function RadialTree({
     >
       {/* Tree group: translate to ring centre, rotate with ring. No scale(). */}
       <g transform={`translate(${currentCenter[0]}, ${currentCenter[1]}) rotate(${rotationDeg})`}>
+        {/* Depth ring — outline circle at the hovered node's radius */}
+        {hoveredNode && (!hasHighlight || highlightedIds.has(nodeId(hoveredNode))) && (
+          <circle
+            cx={0} cy={0}
+            r={hoveredNode.y}
+            fill="none"
+            stroke={highlightColor}
+            strokeWidth={DEPTH_RING_STROKE}
+            style={{ pointerEvents: 'none' }}
+          />
+        )}
         {/* Nodes — filled circles */}
         {allNodes.map(node => {
           if (node.depth === 0) return null // skip root node (donut hole)
@@ -265,7 +296,7 @@ export function RadialTree({
     </svg>
 
     {/* Label overlay — separate SVG above cards so it's never occluded */}
-    {hoveredNode && hoveredNode.depth > 0 && hoveredNode.data.rank !== 'species' && highlightedIds.has(nodeId(hoveredNode)) && (
+    {hoveredNode && highlightedIds.has(nodeId(hoveredNode)) && (
       <svg
         className="pointer-events-none absolute inset-0"
         width={containerSize}
@@ -315,7 +346,7 @@ function HoverLabel({
         x={offsetX}
         y={-4}
         textAnchor={anchor}
-        className={`pointer-events-none select-none fill-foreground text-sm font-semibold`}
+        className="pointer-events-none select-none fill-foreground text-sm font-semibold"
       >
         {node.data.name}
       </text>

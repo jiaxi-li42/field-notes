@@ -5,7 +5,6 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { MdIcon } from '@/components/ui/MdIcon'
 import { RadialTree } from '@/components/collection/RadialTree'
-// import { TaxonomyArc } from '@/components/collection/TaxonomyArc'
 import type { Kingdom } from '@/lib/models/Species'
 
 // ── Tunables ─────────────────────────────────────────────────────────────────
@@ -89,6 +88,25 @@ export function CollectionView({ circleData, activeKingdom, rankLabels, switchVi
   const [zoomed, setZoomed] = useState(false)
   const [idx, setIdx] = useState(0)
 
+  const resetZoom = useCallback(() => {
+    setZoomed(false)
+    setHovered(null)
+    setIdx(0)
+  }, [])
+
+  // Debounce card hover leave so the tree highlight stays stable between cards.
+  const cardLeaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const handleCardEnter = useCallback((i: number) => {
+    if (cardLeaveTimer.current) { clearTimeout(cardLeaveTimer.current); cardLeaveTimer.current = null }
+    setHovered(i)
+  }, [])
+  const handleCardLeave = useCallback(() => {
+    cardLeaveTimer.current = setTimeout(() => {
+      setHovered(null)
+      cardLeaveTimer.current = null
+    }, 150)
+  }, [])
+
   // ── Measure the flex-1 ring area so geometry reacts to the actual space ─────
   const ringAreaRef = useRef<HTMLDivElement>(null)
   const [ringArea, setRingArea] = useState({ w: 0, h: 0 })
@@ -152,11 +170,11 @@ export function CollectionView({ circleData, activeKingdom, rankLabels, switchVi
     const handleKey = (e: KeyboardEvent) => {
       if (e.key === 'ArrowRight') { setIdx(prev => prev + 1); e.preventDefault() }
       else if (e.key === 'ArrowLeft') { setIdx(prev => prev - 1); e.preventDefault() }
-      else if (e.key === 'Escape') { setZoomed(false); setHovered(null); setIdx(0); e.preventDefault() }
+      else if (e.key === 'Escape') { resetZoom(); e.preventDefault() }
     }
     window.addEventListener('keydown', handleKey)
     return () => window.removeEventListener('keydown', handleKey)
-  }, [isCircle, zoomed])
+  }, [isCircle, zoomed, resetZoom])
 
   // ── Swipe gesture when zoomed (touch only) ─────────────────────────────────
   const swipeRef = useRef<{ x: number; y: number; id: number } | null>(null)
@@ -180,12 +198,8 @@ export function CollectionView({ circleData, activeKingdom, rankLabels, switchVi
 
   // Reset interaction state when leaving circle view
   useEffect(() => {
-    if (!isCircle) {
-      setZoomed(false)
-      setHovered(null)
-      setIdx(0)
-    }
-  }, [isCircle])
+    if (!isCircle) resetZoom()
+  }, [isCircle, resetZoom])
 
   const handleCardClick = useCallback((e: React.MouseEvent, i: number) => {
     e.stopPropagation()
@@ -223,7 +237,7 @@ export function CollectionView({ circleData, activeKingdom, rankLabels, switchVi
             variant="ghost"
             size="sm"
             className="gap-1 px-2"
-            onClick={() => { setZoomed(false); setHovered(null); setIdx(0) }}
+            onClick={resetZoom}
             aria-label="Exit fullscreen"
           >
             <MdIcon name="fullscreen_exit" />
@@ -311,8 +325,8 @@ export function CollectionView({ circleData, activeKingdom, rankLabels, switchVi
                     zIndex,
                   }}
                   onClick={(e) => handleCardClick(e, i)}
-                  onMouseEnter={() => { if (!zoomed) setHovered(i) }}
-                  onMouseLeave={() => { if (!zoomed) setHovered(null) }}
+                  onMouseEnter={() => { if (!zoomed) handleCardEnter(i) }}
+                  onMouseLeave={() => { if (!zoomed) handleCardLeave() }}
                 >
                   {isFocused ? (
                     <Link href={card.href} className="block h-full w-full">
