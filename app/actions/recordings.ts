@@ -1,5 +1,6 @@
 'use server'
 
+import { auth } from '@/lib/auth'
 import { RecordingService } from '@/lib/services/RecordingService'
 import { Species } from '@/lib/models/Species'
 import type { Kingdom } from '@/lib/models/Species'
@@ -21,9 +22,13 @@ export type RecordingPayload = {
   date: string
   locationPlaceName: string
   notes: string
+  photos: { id: string; url: string; caption: string }[]
 }
 
 export async function createRecording(payload: RecordingPayload): Promise<{ id: string }> {
+  const session = await auth()
+  if (!session?.user?.id) throw new Error('Unauthorized')
+
   const taxon = new Taxon(
     payload.speciesKingdom,
     payload.taxonPhylum,
@@ -42,12 +47,18 @@ export async function createRecording(payload: RecordingPayload): Promise<{ id: 
     payload.speciesKingdom as Kingdom,
   )
   const location = new Location(payload.locationPlaceName)
-  const recording = RecordingService.create({
+  const recording = await RecordingService.create(session.user.id, {
     species,
     date: new Date(payload.date),
     location,
-    photos: [],
+    photos: payload.photos,
     notes: payload.notes,
   })
   return { id: recording.id }
+}
+
+export async function deleteRecording(id: string): Promise<void> {
+  const session = await auth()
+  if (!session?.user?.id) throw new Error('Unauthorized')
+  await RecordingService.delete(session.user.id, id)
 }

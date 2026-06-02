@@ -22,6 +22,12 @@ import { cn } from '@/lib/utils'
 import type { Kingdom } from '@/lib/models/Species'
 import type { Dictionary } from '@/lib/i18n/dictionaries'
 
+interface UploadedPhoto {
+  id: string
+  url: string
+  previewUrl: string
+}
+
 interface RecordingFormProps {
   lang: string
   dict: Pick<Dictionary, 'nav' | 'recording' | 'actions' | 'form' | 'kingdoms'>
@@ -37,19 +43,35 @@ export function RecordingForm({ lang, dict }: RecordingFormProps) {
   const [calOpen, setCalOpen] = useState(false)
   const [location, setLocation] = useState('')
   const [notes, setNotes] = useState('')
-  const [previews, setPreviews] = useState<string[]>([])
+  const [uploadedPhotos, setUploadedPhotos] = useState<UploadedPhoto[]>([])
+  const [uploading, setUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const collectionHref = lang === 'zh' ? '/zh' : '/'
 
-  function handleFiles(e: React.ChangeEvent<HTMLInputElement>) {
+  async function handleFiles(e: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(e.target.files ?? [])
-    const urls = files.map((f) => URL.createObjectURL(f))
-    setPreviews((prev) => [...prev, ...urls].slice(0, 10))
+    if (files.length === 0) return
+    setUploading(true)
+    try {
+      for (const file of files) {
+        if (uploadedPhotos.length >= 10) break
+        const formData = new FormData()
+        formData.append('file', file)
+        const res = await fetch('/api/upload', { method: 'POST', body: formData })
+        if (!res.ok) continue
+        const { id, url } = await res.json()
+        const previewUrl = URL.createObjectURL(file)
+        setUploadedPhotos((prev) => [...prev, { id, url, previewUrl }].slice(0, 10))
+      }
+    } finally {
+      setUploading(false)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+    }
   }
 
   function removePhoto(index: number) {
-    setPreviews((prev) => prev.filter((_, i) => i !== index))
+    setUploadedPhotos((prev) => prev.filter((_, i) => i !== index))
   }
 
   function handleSubmit(e: React.FormEvent) {
@@ -74,6 +96,7 @@ export function RecordingForm({ lang, dict }: RecordingFormProps) {
           date: date.toISOString(),
           locationPlaceName: location,
           notes,
+          photos: uploadedPhotos.map((p) => ({ id: p.id, url: p.url, caption: '' })),
         })
         router.push(collectionHref)
       } catch {
@@ -180,23 +203,24 @@ export function RecordingForm({ lang, dict }: RecordingFormProps) {
           className="sr-only"
           onChange={handleFiles}
         />
-        {previews.length < 10 && (
+        {uploadedPhotos.length < 10 && (
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
-            className="flex h-20 w-full items-center justify-center gap-2 rounded-lg border-2 border-dashed border-border text-sm text-muted-foreground transition-colors hover:border-ring hover:text-foreground"
+            disabled={uploading}
+            className="flex h-20 w-full items-center justify-center gap-2 rounded-lg border-2 border-dashed border-border text-sm text-muted-foreground transition-colors hover:border-ring hover:text-foreground disabled:opacity-50"
           >
-            <MdIcon name="add_photo_alternate" />
-            <span>{dict.recording.photos}</span>
+            <MdIcon name={uploading ? 'hourglass_empty' : 'add_photo_alternate'} />
+            <span>{uploading ? '…' : dict.recording.photos}</span>
           </button>
         )}
-        {previews.length > 0 && (
+        {uploadedPhotos.length > 0 && (
           <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
-            {previews.map((url, i) => (
-              <div key={url} className="relative aspect-square">
+            {uploadedPhotos.map((photo, i) => (
+              <div key={photo.id} className="relative aspect-square">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src={url}
+                  src={photo.previewUrl}
                   alt=""
                   className="size-full rounded-md object-cover"
                 />
@@ -240,7 +264,7 @@ export function RecordingForm({ lang, dict }: RecordingFormProps) {
         <Button
           type="submit"
           className="flex-1"
-          disabled={!selectedSpecies || isPending}
+          disabled={!selectedSpecies || isPending || uploading}
         >
           {isPending ? '…' : dict.actions.save}
         </Button>

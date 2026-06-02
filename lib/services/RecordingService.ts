@@ -1,129 +1,160 @@
 import 'server-only'
+import { eq, desc } from 'drizzle-orm'
+import { db } from '@/lib/db'
+import { recordings, photos } from '@/lib/db/schema'
 import { Recording } from '@/lib/models/Recording'
 import { Species } from '@/lib/models/Species'
 import type { Kingdom } from '@/lib/models/Species'
 import { Taxon } from '@/lib/models/Taxon'
 import { Location } from '@/lib/models/Location'
 import { Photo } from '@/lib/models/Photo'
-import fixtureData from '@/lib/fixtures/recordings.json'
 
-interface RawTaxon {
-  kingdom: string
-  phylum: string
-  taxonomyClass: string
-  order: string
-  family: string
-  genus: string
-  species: string
-}
+type RecordingRow = typeof recordings.$inferSelect
+type PhotoRow = typeof photos.$inferSelect
 
-interface RawSpecies {
-  gbifKey: number
-  canonicalName: string
-  vernacularNameEn: string
-  vernacularNameZh: string
-  taxon: RawTaxon
-  kingdom: string
-}
-
-interface RawLocation {
-  placeName: string
-  lat?: number
-  lng?: number
-}
-
-interface RawPhoto {
-  url: string
-  caption: string
-  id: string
-}
-
-interface RawRecording {
-  id: string
-  species: RawSpecies
-  date: string
-  location: RawLocation
-  photos: RawPhoto[]
-  notes: string
-  createdAt: string
-}
-
-function hydrate(raw: RawRecording): Recording {
+function hydrate(row: RecordingRow, photoRows: PhotoRow[]): Recording {
   const taxon = new Taxon(
-    raw.species.taxon.kingdom,
-    raw.species.taxon.phylum,
-    raw.species.taxon.taxonomyClass,
-    raw.species.taxon.order,
-    raw.species.taxon.family,
-    raw.species.taxon.genus,
-    raw.species.taxon.species,
+    row.taxonKingdom,
+    row.taxonPhylum,
+    row.taxonClass,
+    row.taxonOrder,
+    row.taxonFamily,
+    row.taxonGenus,
+    row.taxonSpecies,
   )
   const species = new Species(
-    raw.species.gbifKey,
-    raw.species.canonicalName,
-    raw.species.vernacularNameEn,
-    raw.species.vernacularNameZh,
+    row.speciesGbifKey,
+    row.speciesCanonicalName,
+    row.speciesVernacularNameEn,
+    row.speciesVernacularNameZh,
     taxon,
-    raw.species.kingdom as Kingdom,
+    row.speciesKingdom as Kingdom,
   )
   const location = new Location(
-    raw.location.placeName,
-    raw.location.lat,
-    raw.location.lng,
+    row.locationPlaceName,
+    row.locationLat ?? undefined,
+    row.locationLng ?? undefined,
   )
-  const photos = raw.photos.map((p) => new Photo(p.url, p.caption, p.id))
+  const photoList = photoRows
+    .sort((a, b) => a.sortOrder - b.sortOrder)
+    .map((p) => new Photo(p.url, p.caption, p.id))
+
   return new Recording(
-    raw.id,
+    row.id,
     species,
-    new Date(raw.date),
+    new Date(row.date),
     location,
-    photos,
-    raw.notes,
-    new Date(raw.createdAt),
+    photoList,
+    row.notes,
+    new Date(row.createdAt),
   )
 }
-
-const store = new Map<string, Recording>(
-  (fixtureData as RawRecording[]).map((raw) => {
-    const r = hydrate(raw)
-    return [r.id, r]
-  }),
-)
 
 export type CreateRecordingInput = {
   species: Species
   date: Date
   location: Location
-  photos: Photo[]
+  photos: { id: string; url: string; caption: string }[]
   notes: string
 }
 
 export class RecordingService {
-  static getAll(): Recording[] {
-    return Array.from(store.values()).sort(
-      (a, b) => b.date.getTime() - a.date.getTime(),
-    )
+  static async getAll(userId: string): Promise<Recording[]> {
+    const rows = await db
+      .select()
+      .from(recordings)
+      .where(eq(recordings.userId, userId))
+      .orderBy(desc(recordings.date))
+
+    const results: Recording[] = []
+    for (const row of rows) {
+      const photoRows = await db
+        .select()
+        .from(photos)
+        .where(eq(photos.recordingId, row.id))
+      results.push(hydrate(row, photoRows))
+    }
+    return results
   }
 
-  static getById(id: string): Recording | null {
-    return store.get(id) ?? null
+  static async getById(userId: string, id: string): Promise<Recording | null> {
+    const [row] = await db
+      .select()
+      .from(recordings)
+      .where(eq(recordings.id, id))
+      .limit(1)
+
+    if (!row || row.userId !== userId) return null
+
+    const photoRows = await db
+      .select()
+      .from(photos)
+      .where(eq(photos.recordingId, id))
+
+    return hydrate(row, photoRows)
   }
 
-  static create(input: CreateRecordingInput): Recording {
+  static async create(userId: string, input: CreateRecordingInput): Promise<Recording> {
     const id = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
-    const recording = new Recording(
+    const now = new Date()
+
+    await db.insert(recordings).values({
+      id,
+      userId,
+      speciesGbifKey: input.species.gbifKey,
+      speciesCanonicalName: input.species.canonicalName,
+      speciesVernacularNameEn: input.species.vernacularNameEn,
+      speciesVernacularNameZh: input.species.vernacularNameZh,
+      speciesKingdom: input.species.kingdom,
+      taxonKingdom: input.species.taxon.kingdom,
+      taxonPhylum: input.species.taxon.phylum,
+      taxonClass: input.species.taxon.taxonomyClass,
+      taxonOrder: input.species.taxon.order,
+      taxonFamily: input.species.taxon.family,
+      taxonGenus: input.species.taxon.genus,
+      taxonSpecies: input.species.taxon.species,
+      date: input.date.toISOString(),
+      locationPlaceName: input.location.placeName,
+      locationLat: input.location.lat ?? null,
+      locationLng: input.location.lng ?? null,
+      notes: input.notes,
+      createdAt: now,
+    })
+
+    if (input.photos.length > 0) {
+      await db.insert(photos).values(
+        input.photos.map((p, i) => ({
+          id: p.id,
+          recordingId: id,
+          url: p.url,
+          caption: p.caption,
+          sortOrder: i,
+        })),
+      )
+    }
+
+    const photoList = input.photos.map((p) => new Photo(p.url, p.caption, p.id))
+    return new Recording(
       id,
       input.species,
       input.date,
       input.location,
-      input.photos,
+      photoList,
       input.notes,
+      now,
     )
-    store.set(id, recording)
-    return recording
   }
 
-  static delete(id: string): void {
-    store.delete(id)
+  static async delete(userId: string, id: string): Promise<void> {
+    const [row] = await db
+      .select({ userId: recordings.userId })
+      .from(recordings)
+      .where(eq(recordings.id, id))
+      .limit(1)
+
+    if (!row || row.userId !== userId) return
+
+    await db.delete(photos).where(eq(photos.recordingId, id))
+    await db.delete(recordings).where(eq(recordings.id, id))
   }
 }

@@ -1,6 +1,7 @@
 import { Fragment } from 'react'
 import Link from 'next/link'
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
+import { auth } from '@/lib/auth'
 import { MdIcon } from '@/components/ui/MdIcon'
 import { getDictionary } from '@/lib/i18n/dictionaries'
 import { RecordingService } from '@/lib/services/RecordingService'
@@ -18,12 +19,15 @@ export default async function SpeciesPage({
   params: Promise<{ lang: string; id: string }>
 }) {
   const { lang, id } = await params
+  const session = await auth()
+  if (!session?.user?.id) redirect(`${lang === 'zh' ? '/zh' : ''}/login`)
+
   const dict = await getDictionary(lang)
 
   const gbifKey = parseInt(id, 10)
   if (isNaN(gbifKey)) notFound()
 
-  const all = RecordingService.getAll()
+  const all = await RecordingService.getAll(session.user.id)
   const recordings = all.filter((r) => r.species.gbifKey === gbifKey)
   if (recordings.length === 0) notFound()
 

@@ -19,15 +19,26 @@
   },
   "collection": {
     "filter_all": "全部",
-    "empty": "尚无记录",
-    "empty_hint": "点击 + 新建首个记录",
+    "clear_all": "清除全部",
+    "empty": "空空如也",
+    "empty_hint": "添加一条物种记录，它将显示在这里。",
     "empty_filtered": "此界别暂无记录"
   },
   "header": {
     "search": "搜索",
     "add": "新增",
     "switch_view": "切换视图",
-    "exit_fullscreen": "退出全屏"
+    "exit_fullscreen": "退出全屏",
+    "filter": "筛选",
+    "profile": "个人资料",
+    "settings": "设置",
+    "circle_unavailable": "暂不可用",
+    "circle_unavailable_hint": "添加至少 5 条记录以解锁可视化视图。",
+    "sort_by": "排序",
+    "sort_name": "名称",
+    "sort_date": "添加日期",
+    "sort_kingdom": "分类",
+    "filter_by_kingdom": "仅显示"
   },
   "ranks": {
     "kingdom": "界",
@@ -40,12 +51,32 @@
   },
   "detail": {
     "taxonomy": "分类",
-    "all_recordings": "该物种的所有记录"
+    "all_recordings": "该物种的所有记录",
+    "date_added": "添加日期",
+    "observed_location": "观察地点",
+    "edit": "编辑",
+    "delete_confirm": "确定要删除这条记录吗？"
   },
   "actions": {
     "save": "保存",
     "cancel": "取消",
     "delete": "删除"
+  },
+  "auth": {
+    "login": "登录",
+    "register": "注册",
+    "username": "用户名",
+    "password": "密码",
+    "confirm_password": "确认密码",
+    "login_error": "用户名或密码错误",
+    "username_taken": "用户名已被使用",
+    "username_invalid": "用户名须为3–20个字母、数字或下划线",
+    "password_short": "密码至少6个字符",
+    "password_mismatch": "两次密码不一致",
+    "register_error": "注册失败",
+    "logout": "退出登录",
+    "no_account": "还没有账号？",
+    "have_account": "已有账号？"
   },
   "form": {
     "species_placeholder": "按俗名或学名搜索…",

@@ -67,7 +67,7 @@ interface RadialTreeProps {
   angleStep: number
   zoomed: boolean
   hoveredCardIndex: number | null
-  activeKingdom?: Kingdom
+  activeKingdoms: Kingdom[]
   rankLabels: Record<string, string>
   idx: number
 }
@@ -82,7 +82,7 @@ export function RadialTree({
   angleStep,
   zoomed,
   hoveredCardIndex,
-  activeKingdom,
+  activeKingdoms,
   rankLabels,
   idx,
 }: RadialTreeProps) {
@@ -95,7 +95,7 @@ export function RadialTree({
   useEffect(() => {
     setPinnedNode(null)
     setHoveredNode(null)
-  }, [cards, activeKingdom])
+  }, [cards, activeKingdoms])
 
   // Screen-space radius: the outer edge of the tree layout.
   const screenRadius = innerRadius * currentScale * TREE_RADIUS_RATIO
@@ -188,20 +188,27 @@ export function RadialTree({
       const leaf = nodeMap.get(hoveredCardIndex)
       if (leaf) return collectAncestorIds(leaf)
     }
-    if (activeKingdom && layoutRoot) {
+    if (activeKingdoms.length > 0 && layoutRoot) {
       const ids = new Set<string>()
       for (const node of layoutRoot.descendants()) {
-        if (node.data.kingdom === activeKingdom) ids.add(nodeId(node))
+        if (node.data.kingdom && activeKingdoms.includes(node.data.kingdom as Kingdom)) ids.add(nodeId(node))
       }
       return ids
     }
     return new Set<string>()
-  }, [highlightSource, pinnedNode, hoveredCardIndex, nodeMap, activeKingdom, layoutRoot])
+  }, [highlightSource, pinnedNode, hoveredCardIndex, nodeMap, activeKingdoms, layoutRoot])
 
-  const highlightKingdom = highlightSource?.data.kingdom
+  // Per-node color: each highlighted node uses its own kingdom color.
+  // Depth ring and label use the specific source's kingdom.
+  const nodeColor = useCallback((node: HierarchyPointNode<TaxonTreeNode>) => {
+    const k = node.data.kingdom as Kingdom | undefined
+    return k ? kingdomColor(k) : NEUTRAL_NODE
+  }, [])
+
+  const depthRingKingdom = highlightSource?.data.kingdom
     ?? (hoveredCardIndex !== null ? cards[hoveredCardIndex]?.kingdom : undefined)
-    ?? activeKingdom
-  const highlightColor = highlightKingdom ? kingdomColor(highlightKingdom) : NEUTRAL_NODE
+    ?? (activeKingdoms.length === 1 ? activeKingdoms[0] : undefined)
+  const depthRingColor = depthRingKingdom ? kingdomColor(depthRingKingdom) : NEUTRAL_NODE
 
   // ── Event handlers ────────────────────────────────────────────────────────
   // Debounce leave so the depth ring stays visible while moving between nodes.
@@ -255,7 +262,7 @@ export function RadialTree({
             cx={0} cy={0}
             r={hoveredNode.y}
             fill="none"
-            stroke={highlightColor}
+            stroke={depthRingColor}
             strokeWidth={DEPTH_RING_STROKE}
             style={{ pointerEvents: 'none' }}
           />
@@ -269,23 +276,24 @@ export function RadialTree({
           const [x, y] = polarToXY(node.x, node.y)
 
           const dimmed = hasHighlight && !highlighted
+          const disabled = activeKingdoms.length > 0 && !highlighted
 
           return (
             <g
               key={id}
-              onMouseEnter={() => handleNodeEnter(node)}
-              onMouseLeave={handleNodeLeave}
-              onClick={(e) => handleNodeClick(e, node)}
-              style={{ cursor: 'pointer' }}
+              onMouseEnter={disabled ? undefined : () => handleNodeEnter(node)}
+              onMouseLeave={disabled ? undefined : handleNodeLeave}
+              onClick={disabled ? undefined : (e) => handleNodeClick(e, node)}
+              style={{ cursor: disabled ? 'default' : 'pointer' }}
             >
               {/* Invisible hit area */}
-              <circle cx={x} cy={y} r={HIT_RADIUS} fill="transparent" style={{ pointerEvents: 'all' }} />
+              <circle cx={x} cy={y} r={HIT_RADIUS} fill="transparent" style={{ pointerEvents: disabled ? 'none' : 'all' }} />
               {/* Visible node */}
               <circle
                 cx={x}
                 cy={y}
                 r={NODE_RADIUS}
-                fill={highlighted ? highlightColor : NEUTRAL_NODE}
+                fill={highlighted ? nodeColor(node) : NEUTRAL_NODE}
                 opacity={dimmed ? DIM_OPACITY : 1}
                 style={{ pointerEvents: 'none' }}
               />
@@ -316,6 +324,8 @@ export function RadialTree({
 }
 
 // ── Hover label sub-component ───────────────────────────────────────────────
+// Positioned along the radial axis (like D3 radial tree labels) so text
+// follows the node's direction and never overlaps the depth ring.
 function HoverLabel({
   node,
   currentCenter,
@@ -327,32 +337,47 @@ function HoverLabel({
   rotationDeg: number
   rankLabels: Record<string, string>
 }) {
-  // Node position in the rotated group — undo rotation to get screen coords.
   const rotationRad = (rotationDeg * Math.PI) / 180
-  const [localX, localY] = polarToXY(node.x + rotationRad, node.y)
-  const screenX = currentCenter[0] + localX
-  const screenY = currentCenter[1] + localY
+  const angle = node.x + rotationRad // effective angle in radians
+
+  // Normalise to [0, 2π) for top/bottom half check.
+  const TWO_PI = 2 * Math.PI
+  const norm = ((angle % TWO_PI) + TWO_PI) % TWO_PI
+  const inBottomHalf = norm >= Math.PI
+
+  // D3-style transform chain:
+  //   1. translate to ring centre
+  //   2. rotate so local +x points along the node's radial line
+  //   3. translate along that line to the node's radius
+  //   4. flip 180° in the bottom half so text always reads left-to-right
+  const angleDeg = (angle * 180) / Math.PI
+  const flipDeg = inBottomHalf ? 180 : 0
+  const transform = [
+    `translate(${currentCenter[0]},${currentCenter[1]})`,
+    `rotate(${angleDeg - 90})`,
+    `translate(${node.y},0)`,
+    `rotate(${flipDeg})`,
+  ].join(' ')
+
+  // After the flip, "end" always means towards centre.
+  const textX = inBottomHalf ? LABEL_OFFSET : -LABEL_OFFSET
+  const anchor = inBottomHalf ? 'start' : 'end'
 
   const rankLabel = rankLabels[node.data.rank] ?? node.data.rank
 
-  // Place label on the side with more space: left nodes → label right, right nodes → label left.
-  const onLeft = screenX < currentCenter[0]
-  const offsetX = onLeft ? LABEL_OFFSET : -LABEL_OFFSET
-  const anchor = onLeft ? 'start' : 'end'
-
   return (
-    <g transform={`translate(${screenX}, ${screenY})`}>
+    <g transform={transform}>
       <text
-        x={offsetX}
-        y={-4}
+        x={textX}
+        dy={-4}
         textAnchor={anchor}
         className="pointer-events-none select-none fill-foreground text-sm font-semibold"
       >
         {node.data.name}
       </text>
       <text
-        x={offsetX}
-        y={12}
+        x={textX}
+        dy={12}
         textAnchor={anchor}
         className="pointer-events-none select-none fill-muted-foreground text-xs"
       >

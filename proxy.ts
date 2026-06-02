@@ -6,8 +6,39 @@ export type Locale = (typeof locales)[number]
 const defaultLocale: Locale = 'en'
 const nonDefaultLocales = locales.filter((l) => l !== defaultLocale)
 
+const PUBLIC_PATHS = ['/login', '/register']
+
+function isPublicPath(pathname: string): boolean {
+  return PUBLIC_PATHS.some(
+    (p) =>
+      pathname === p ||
+      pathname.endsWith(p) ||
+      nonDefaultLocales.some(
+        (l) => pathname === `/${l}${p}` || pathname.startsWith(`/${l}${p}/`),
+      ),
+  )
+}
+
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
+
+  // ── Auth gate (cookie-presence only; real validation in auth()) ────
+  if (!isPublicPath(pathname)) {
+    const hasSession =
+      request.cookies.has('authjs.session-token') ||
+      request.cookies.has('__Secure-authjs.session-token')
+
+    if (!hasSession) {
+      const locale = nonDefaultLocales.find(
+        (l) => pathname === `/${l}` || pathname.startsWith(`/${l}/`),
+      )
+      const url = request.nextUrl.clone()
+      url.pathname = locale ? `/${locale}/login` : '/login'
+      return NextResponse.redirect(url)
+    }
+  }
+
+  // ── i18n routing (unchanged) ──────────────────────────────────────
 
   // Redirect /en/... to its prefix-free canonical URL
   if (
@@ -33,5 +64,5 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico|api).*)'  ],
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|api).*)'],
 }

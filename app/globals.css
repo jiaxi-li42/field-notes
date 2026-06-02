@@ -6,6 +6,7 @@
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-nanum);
+  --font-sans-ui: var(--font-geist);
   --font-mono: var(--font-geist-mono);
   --font-heading: var(--font-sans);
   --color-sidebar-ring: var(--sidebar-ring);
@@ -115,10 +116,12 @@
 }
 
 /* 思源宋体 CN — font loaded via next/font/local (--font-source-han CSS var).
-   Rules live in @layer base so Tailwind always emits them regardless of scanning. */
+   Rules live in @layer base so Tailwind always emits them regardless of scanning.
+   --font-sans-ui: Geist for latin, PingFang SC for CJK sans contexts (menus, UI). */
 @layer base {
   [data-lang="zh"] {
     font-family: var(--font-nanum), var(--font-source-han), serif;
+    --font-sans-ui: var(--font-geist), 'PingFang SC', sans-serif;
   }
   [data-lang="zh"] h1 {
     font-family: var(--font-nanum), serif;

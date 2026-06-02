@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Nanum_Myeongjo, Geist_Mono } from "next/font/google";
+import { Nanum_Myeongjo, Geist, Geist_Mono } from "next/font/google";
 import localFont from "next/font/local";
 import "./globals.css";
 import { OverlayScrollbarsInit } from "@/components/shell/OverlayScrollbarsInit";
@@ -8,6 +8,11 @@ const nanumMyeongjo = Nanum_Myeongjo({
   variable: "--font-nanum",
   subsets: ["latin"],
   weight: ["400", "700", "800"],
+});
+
+const geist = Geist({
+  variable: "--font-geist",
+  subsets: ["latin"],
 });
 
 const geistMono = Geist_Mono({
@@ -36,7 +41,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${nanumMyeongjo.variable} ${geistMono.variable} ${sourceHanSerifCN.variable} h-full antialiased`}
+      className={`${nanumMyeongjo.variable} ${geist.variable} ${geistMono.variable} ${sourceHanSerifCN.variable} h-full antialiased`}
     >
       <head>
         {/* Material Symbols — weight-300 outlined icons */}

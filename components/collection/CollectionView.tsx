@@ -1,10 +1,33 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef, type PointerEvent as RPointerEvent } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef, type PointerEvent as RPointerEvent } from 'react'
 import Link from 'next/link'
-import { Button } from '@/components/ui/button'
+import { useRouter } from 'next/navigation'
+import { Button, buttonVariants } from '@/components/ui/button'
 import { MdIcon } from '@/components/ui/MdIcon'
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuCheckboxItem,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+} from '@/components/ui/dropdown-menu'
+import {
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
+  PopoverHeader,
+  PopoverTitle,
+  PopoverDescription,
+} from '@/components/ui/popover'
 import { RadialTree } from '@/components/collection/RadialTree'
+import { cn } from '@/lib/utils'
+import { langPrefix } from '@/lib/utils/i18n'
 import type { Kingdom } from '@/lib/models/Species'
 
 // ── Tunables ─────────────────────────────────────────────────────────────────
@@ -34,6 +57,8 @@ const ZOOMED_CENTER_RATIO = 0.9
 
 // Swipe: minimum horizontal distance (px) to register as a swipe.
 const SWIPE_THRESHOLD = 40
+
+const kingdoms: Kingdom[] = ['Animalia', 'Plantae', 'Fungi', 'Protista', 'Monera']
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 /** Shortest angular distance (wrapping), result in [-max/2, max/2]. */
@@ -65,23 +90,94 @@ export interface CircleCardData {
   species: string
 }
 
+export type SortOption = 'name' | 'date' | 'kingdom'
+
 interface CollectionViewProps {
   /** Plain-object card data for the circle layout (serialisable across the server boundary). */
   circleData: CircleCardData[]
-  /** Active kingdom filter — highlights matching nodes in the tree instead of hiding cards. */
-  activeKingdom?: Kingdom
+  /** Active kingdom filters — highlights matching nodes in the tree instead of hiding cards. */
+  activeKingdoms: Kingdom[]
+  /** Active sort option. */
+  activeSort: SortOption
   /** Localised taxonomy rank labels (phylum, class, etc.) for the tree hover label. */
   rankLabels: Record<string, string>
+  /** Localised labels */
+  sortByLabel: string
+  sortLabels: Record<SortOption, string>
+  filterLabel: string
+  filterByKingdomLabel: string
+  clearAllLabel: string
   switchViewLabel: string
   exitFullscreenLabel: string
+  circleUnavailableLabel: string
+  circleUnavailableHint: string
+  kingdomLabels: Record<string, string>
+  kingdomsLabel: string
   lang: string
   /** Server-rendered grid markup passed as children — rendered as-is in grid mode. */
   children: React.ReactNode
 }
 
 // ── Component ────────────────────────────────────────────────────────────────
-export function CollectionView({ circleData, activeKingdom, rankLabels, switchViewLabel, exitFullscreenLabel, lang, children }: CollectionViewProps) {
+export function CollectionView({
+  circleData,
+  activeKingdoms,
+  activeSort,
+  rankLabels,
+  sortByLabel,
+  sortLabels,
+  filterLabel,
+  filterByKingdomLabel,
+  clearAllLabel,
+  switchViewLabel,
+  exitFullscreenLabel,
+  circleUnavailableLabel,
+  circleUnavailableHint,
+  kingdomLabels,
+  kingdomsLabel,
+  lang,
+  children,
+}: CollectionViewProps) {
+  const router = useRouter()
+  const prefix = langPrefix(lang)
+  const base = prefix || '/'
+
   const [view, setView] = useState<'grid' | 'circle'>('grid')
+  const isEmpty = circleData.length === 0
+  const canCircle = circleData.length >= 5
+
+  // Only show kingdoms that have at least one recording
+  const presentKingdoms = useMemo(() => {
+    const set = new Set(circleData.map((c) => c.kingdom))
+    return kingdoms.filter((k) => set.has(k))
+  }, [circleData])
+  const hasFilter = activeKingdoms.length > 0
+
+  // ── URL builder — preserves both sort and kingdom params ───────────────────
+  function buildUrl(sort: SortOption, kingdoms: Kingdom[]) {
+    const params = new URLSearchParams()
+    if (sort !== 'kingdom') params.set('sort', sort)
+    if (kingdoms.length > 0) params.set('kingdom', kingdoms.join(','))
+    const qs = params.toString()
+    return qs ? `${base}?${qs}` : base
+  }
+
+  // ── Sort navigation ────────────────────────────────────────────────────────
+  function selectSort(s: SortOption) {
+    router.push(buildUrl(s, activeKingdoms))
+  }
+
+  // ── Kingdom filter navigation (multi-select) ───────────────────────────────
+  function toggleKingdom(k: Kingdom) {
+    const next = activeKingdoms.includes(k)
+      ? activeKingdoms.filter((x) => x !== k)
+      : [...activeKingdoms, k]
+    router.push(buildUrl(activeSort, next))
+  }
+
+  function clearKingdoms() {
+    router.push(buildUrl(activeSort, []))
+  }
 
   // ── Interaction state ──────────────────────────────────────────────────────
   const [hovered, setHovered] = useState<number | null>(null)
@@ -230,20 +326,76 @@ export function CollectionView({ circleData, activeKingdom, rankLabels, switchVi
       className="mx-auto max-w-sm md:max-w-2xl flex flex-col"
       style={isCircle ? { height: 'calc(100vh - 5rem)' } : undefined}
     >
-      {/* ── Toolbar ───────────────────────────────────────────────────────────── */}
-      <div className="flex shrink-0 items-center gap-4 px-4">
+      {/* ── Toolbar: filter (left) + switch view / exit fullscreen (right) ──── */}
+      <div className="flex shrink-0 items-center justify-between px-4">
+        {/* Left — filter dropdown */}
+        {zoomed ? (
+          <div />
+        ) : (
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              disabled={isEmpty}
+              className={cn(
+                buttonVariants({ variant: hasFilter ? 'outline' : 'ghost', size: 'sm' }),
+                'gap-1 px-2 cursor-pointer',
+              )}
+              aria-label="Filter by kingdom"
+            >
+              <MdIcon name="filter_list" />
+              {filterLabel}
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" sideOffset={6} className="font-sans-ui shadow-none ring-0">
+              <DropdownMenuGroup>
+                <DropdownMenuLabel>{sortByLabel}</DropdownMenuLabel>
+                <DropdownMenuRadioGroup value={activeSort} onValueChange={(v) => selectSort(v as SortOption)}>
+                  {(['kingdom', 'name', 'date'] as const).map((s) => (
+                    <DropdownMenuRadioItem key={s} value={s}>
+                      {sortLabels[s]}
+                    </DropdownMenuRadioItem>
+                  ))}
+                </DropdownMenuRadioGroup>
+              </DropdownMenuGroup>
+              <DropdownMenuSeparator />
+              <DropdownMenuGroup>
+                <DropdownMenuLabel>{filterByKingdomLabel}</DropdownMenuLabel>
+                {presentKingdoms.map((k) => (
+                  <DropdownMenuCheckboxItem
+                    key={k}
+                    checked={activeKingdoms.includes(k)}
+                    onClick={() => toggleKingdom(k)}
+                  >
+                    {kingdomLabels[k]}
+                  </DropdownMenuCheckboxItem>
+                ))}
+              </DropdownMenuGroup>
+              {hasFilter && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    variant="destructive"
+                    onClick={() => clearKingdoms()}
+                  >
+                    {clearAllLabel}
+                  </DropdownMenuItem>
+                </>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
+
+        {/* Right — switch view / exit fullscreen */}
         {zoomed ? (
           <Button
             variant="ghost"
             size="sm"
-            className="gap-1 px-2"
+            className="gap-1 px-2 ml-auto"
             onClick={resetZoom}
             aria-label="Exit fullscreen"
           >
             <MdIcon name="fullscreen_exit" />
             {exitFullscreenLabel}
           </Button>
-        ) : (
+        ) : canCircle ? (
           <Button
             variant="ghost"
             size="sm"
@@ -254,11 +406,31 @@ export function CollectionView({ circleData, activeKingdom, rankLabels, switchVi
             <MdIcon name="swap_horiz" />
             {switchViewLabel}
           </Button>
+        ) : (
+          <Popover>
+            <PopoverTrigger
+              disabled={isEmpty}
+              className={cn(
+                buttonVariants({ variant: 'ghost', size: 'sm' }),
+                'gap-1 px-2 cursor-pointer',
+              )}
+              aria-label="Switch view"
+            >
+              <MdIcon name="swap_horiz" />
+              {switchViewLabel}
+            </PopoverTrigger>
+            <PopoverContent align="end" className="font-sans-ui shadow-none ring-0 w-56">
+              <PopoverHeader>
+                <PopoverTitle>{circleUnavailableLabel}</PopoverTitle>
+                <PopoverDescription>{circleUnavailableHint}</PopoverDescription>
+              </PopoverHeader>
+            </PopoverContent>
+          </Popover>
         )}
       </div>
 
-      {/* ── Grid view — server-rendered children ─────────────────────────────── */}
-      {!isCircle && <div className="pb-4">{children}</div>}
+      {/* ── Grid view / empty state — server-rendered children ────────────── */}
+      {(!isCircle || isEmpty) && <div className="pb-4">{children}</div>}
 
       {/* ── Circle view ──────────────────────────────────────────────────────── */}
       {isCircle && (
@@ -349,7 +521,7 @@ export function CollectionView({ circleData, activeKingdom, rankLabels, switchVi
               angleStep={angleStep}
               zoomed={zoomed}
               hoveredCardIndex={hovered}
-              activeKingdom={activeKingdom}
+              activeKingdoms={activeKingdoms}
               rankLabels={rankLabels}
               idx={idx}
             />
@@ -391,6 +563,7 @@ export function CollectionView({ circleData, activeKingdom, rankLabels, switchVi
           )}
         </div>
       )}
+
     </div>
   )
 }

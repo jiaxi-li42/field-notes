@@ -14,6 +14,7 @@ export type Dictionary = {
   }
   collection: {
     filter_all: string
+    clear_all: string
     empty: string
     empty_hint: string
     empty_filtered: string
@@ -23,6 +24,16 @@ export type Dictionary = {
     add: string
     switch_view: string
     exit_fullscreen: string
+    filter: string
+    profile: string
+    settings: string
+    circle_unavailable: string
+    circle_unavailable_hint: string
+    sort_by: string
+    sort_name: string
+    sort_date: string
+    sort_kingdom: string
+    filter_by_kingdom: string
   }
   ranks: {
     kingdom: string
@@ -36,6 +47,26 @@ export type Dictionary = {
   detail: {
     taxonomy: string
     all_recordings: string
+    date_added: string
+    observed_location: string
+    edit: string
+    delete_confirm: string
+  }
+  auth: {
+    login: string
+    register: string
+    username: string
+    password: string
+    confirm_password: string
+    login_error: string
+    username_taken: string
+    username_invalid: string
+    password_short: string
+    password_mismatch: string
+    register_error: string
+    logout: string
+    no_account: string
+    have_account: string
   }
   actions: { save: string; cancel: string; delete: string }
   form: {
