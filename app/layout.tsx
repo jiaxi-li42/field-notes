@@ -3,6 +3,7 @@ import { Nanum_Myeongjo, Geist, Geist_Mono } from "next/font/google";
 import localFont from "next/font/local";
 import "./globals.css";
 import { OverlayScrollbarsInit } from "@/components/shell/OverlayScrollbarsInit";
+import { TooltipProvider } from "@/components/ui/tooltip";
 
 const nanumMyeongjo = Nanum_Myeongjo({
   variable: "--font-nanum",
@@ -52,7 +53,9 @@ export default function RootLayout({
       </head>
       <body className="min-h-full flex flex-col">
         <OverlayScrollbarsInit />
-        {children}
+        <TooltipProvider>
+          {children}
+        </TooltipProvider>
       </body>
     </html>
   );

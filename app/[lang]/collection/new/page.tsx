@@ -15,7 +15,7 @@ export default async function NewRecordingPage({
   const dict = await getDictionary(lang)
 
   return (
-    <main className="container mx-auto max-w-lg px-4 pt-6">
+    <main className="min-h-screen bg-white">
       <RecordingForm lang={lang} dict={dict} />
     </main>
   )

@@ -15,6 +15,8 @@ import { cn } from '@/lib/utils'
 export interface GBIFSuggestion {
   key: number
   canonicalName: string
+  vernacularName?: string
+  vernacularNameZh?: string
   rank?: string
   kingdom?: string
   phylum?: string
@@ -49,6 +51,7 @@ export function TaxonomySearch({
   const onClearRef = useRef(onClear)
   onClearRef.current = onClear
 
+  // ── Search via GBIF ───────────────────────────────────────────────────────
   useEffect(() => {
     if (justSelectedRef.current) {
       justSelectedRef.current = false
@@ -62,20 +65,25 @@ export function TaxonomySearch({
     }
     setLoading(true)
     setOpen(true)
+    const abort = new AbortController()
     const timer = setTimeout(async () => {
       try {
-        const res = await fetch(`/api/taxonomy?q=${encodeURIComponent(search)}`)
+        const res = await fetch(
+          `/api/taxonomy?q=${encodeURIComponent(search)}`,
+          { signal: abort.signal },
+        )
         const data: GBIFSuggestion[] = await res.json()
         setResults(data.filter((s) => s.canonicalName))
-      } catch {
-        setResults([])
+      } catch (e) {
+        if (!abort.signal.aborted) setResults([])
       } finally {
-        setLoading(false)
+        if (!abort.signal.aborted) setLoading(false)
       }
     }, 300)
-    return () => clearTimeout(timer)
+    return () => { clearTimeout(timer); abort.abort() }
   }, [search])
 
+  // ── Click outside ─────────────────────────────────────────────────────────
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
@@ -86,11 +94,27 @@ export function TaxonomySearch({
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  function handleSelect(item: GBIFSuggestion) {
+  // ── Select: emit immediately, then resolve zh name in background ──────────
+  async function handleSelect(item: GBIFSuggestion) {
     justSelectedRef.current = true
-    onSelect(item)
-    setSearch(item.canonicalName)
+    setSearch(item.vernacularName || item.canonicalName)
     setOpen(false)
+
+    // Emit with GBIF data right away
+    onSelect(item)
+
+    // Fetch zh vernacular name from iNaturalist in the background
+    try {
+      const res = await fetch(
+        `/api/taxonomy/resolve?name=${encodeURIComponent(item.canonicalName)}`,
+      )
+      if (res.ok) {
+        const { vernacularNameZh } = await res.json()
+        if (vernacularNameZh) {
+          onSelect({ ...item, vernacularNameZh })
+        }
+      }
+    } catch { /* non-critical — zh name is optional */ }
   }
 
   return (
@@ -127,9 +151,16 @@ export function TaxonomySearch({
                     value={String(item.key)}
                     onSelect={() => handleSelect(item)}
                   >
-                    <span className="font-medium italic">{item.canonicalName}</span>
+                    <div className="flex flex-col">
+                      {item.vernacularName && (
+                        <span className="font-medium">{item.vernacularName}</span>
+                      )}
+                      <span className={cn('italic', item.vernacularName ? 'text-xs text-muted-foreground' : 'font-medium')}>
+                        {item.canonicalName}
+                      </span>
+                    </div>
                     {item.kingdom && (
-                      <span className="ml-auto text-xs text-muted-foreground">
+                      <span className="ml-auto self-start text-xs text-muted-foreground">
                         {item.kingdom}
                       </span>
                     )}

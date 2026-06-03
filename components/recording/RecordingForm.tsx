@@ -7,7 +7,6 @@ import { MdIcon } from '@/components/ui/MdIcon'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
-import { Separator } from '@/components/ui/separator'
 import { Calendar } from '@/components/ui/calendar'
 import {
   Popover,
@@ -142,8 +141,8 @@ export function RecordingForm({ lang, dict }: RecordingFormProps) {
         await createRecording({
           speciesGbifKey: selectedSpecies.key,
           speciesCanonicalName: selectedSpecies.canonicalName,
-          speciesVernacularEn: '',
-          speciesVernacularZh: '',
+          speciesVernacularEn: selectedSpecies.vernacularName ?? '',
+          speciesVernacularZh: selectedSpecies.vernacularNameZh ?? '',
           speciesKingdom: selectedSpecies.kingdom ?? 'Animalia',
           taxonPhylum: selectedSpecies.phylum ?? '',
           taxonClass: selectedSpecies.class ?? '',
@@ -165,176 +164,169 @@ export function RecordingForm({ lang, dict }: RecordingFormProps) {
 
   return (
     <form onSubmit={handleSubmit} noValidate>
-      {/* Header */}
-      <div className="flex items-center gap-2 pb-4">
-        <Link
-          href={collectionHref}
-          className={cn(buttonVariants({ variant: 'ghost', size: 'icon-sm' }))}
-          aria-label={dict.nav.collection}
-        >
-          <MdIcon name="arrow_back" />
-        </Link>
-        <h1 className="text-lg font-semibold tracking-tight">{dict.nav.new}</h1>
-      </div>
-
-      <Separator />
-
-      {/* Species */}
-      <div className="space-y-2 py-5">
-        <label className="text-sm font-medium">{dict.recording.species}</label>
-        <TaxonomySearch
-          placeholder={dict.form.species_placeholder}
-          noResults={dict.form.no_results}
-          searching={dict.form.searching}
-          onSelect={(s) => setSelectedSpecies(s)}
-          onClear={() => setSelectedSpecies(null)}
-        />
-        {selectedSpecies?.kingdom && (
-          <div className="flex items-center gap-2 pt-1">
-            <KingdomBadge
-              kingdom={selectedSpecies.kingdom as Kingdom}
-              label={dict.kingdoms[selectedSpecies.kingdom] ?? selectedSpecies.kingdom}
-            />
-            <span className="text-sm text-muted-foreground italic">
-              {selectedSpecies.canonicalName}
-            </span>
-          </div>
-        )}
-      </div>
-
-      <Separator />
-
-      {/* Date */}
-      <div className="space-y-2 py-5">
-        <label className="text-sm font-medium">{dict.recording.date}</label>
-        <Popover open={calOpen} onOpenChange={setCalOpen}>
-          <PopoverTrigger
-            className={cn(
-              buttonVariants({ variant: 'outline' }),
-              'w-full justify-start font-normal',
-            )}
+      {/* Header — fixed */}
+      <header className="fixed left-0 right-0 top-0 z-50 bg-white">
+        <div className="mx-auto flex max-w-sm md:max-w-2xl items-center justify-between p-4">
+          <Link
+            href={collectionHref}
+            className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }), 'px-2')}
           >
-            <MdIcon name="calendar_today" className="mr-2" />
-            {formatDate(date, lang)}
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-0" align="start">
-            <Calendar
-              mode="single"
-              selected={date}
-              onSelect={(d) => {
-                if (d) {
-                  setDate(d)
-                  setCalOpen(false)
-                }
-              }}
-              disabled={(d) => d > new Date()}
-            />
-          </PopoverContent>
-        </Popover>
-      </div>
-
-      <Separator />
-
-      {/* Location */}
-      <div className="space-y-2 py-5">
-        <label className="text-sm font-medium">{dict.recording.location}</label>
-        <Input
-          value={location}
-          onChange={(e) => setLocation(e.target.value)}
-          placeholder={dict.form.location_placeholder}
-        />
-      </div>
-
-      <Separator />
-
-      {/* Photos */}
-      <div className="space-y-2 py-5">
-        <div className="flex items-center justify-between">
-          <label className="text-sm font-medium">{dict.recording.photos}</label>
-          <span className="text-xs text-muted-foreground">{dict.form.photos_hint}</span>
+            {dict.actions.cancel}
+          </Link>
+          <Button
+            type="submit"
+            variant="ghost"
+            size="sm"
+            className="px-2"
+            disabled={!selectedSpecies || isPending || uploading}
+          >
+            {isPending ? '…' : dict.actions.save}
+          </Button>
         </div>
-        <input
-          ref={fileInputRef}
-          type="file"
-          multiple
-          accept="image/*"
-          className="sr-only"
-          onChange={handleFiles}
-        />
-        {uploadedPhotos.length < 10 && (
-          <button
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={uploading}
-            className="flex h-20 w-full items-center justify-center gap-2 rounded-lg border-2 border-dashed border-border text-sm text-muted-foreground transition-colors hover:border-ring hover:text-foreground disabled:opacity-50"
-          >
-            <MdIcon name={uploading ? 'hourglass_empty' : 'add_photo_alternate'} />
-            <span>{uploading ? '…' : dict.recording.photos}</span>
-          </button>
-        )}
-        {uploadedPhotos.length > 0 && (
-          <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
-            {uploadedPhotos.map((photo, i) => (
-              <div key={photo.id}>
-                <div className="relative aspect-square">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={photo.previewUrl}
-                    alt=""
-                    className="size-full rounded-md object-cover"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => removePhoto(i)}
-                    className="absolute -top-1.5 -right-1.5 flex size-5 items-center justify-center rounded-full bg-foreground text-background"
-                    aria-label="Remove photo"
-                  >
-                    <MdIcon name="close" size={14} />
-                  </button>
-                </div>
-                <input
-                  type="text"
-                  value={photo.caption}
-                  onChange={(e) => updateCaption(i, e.target.value)}
-                  placeholder={dict.form.caption_placeholder}
-                  className="mt-1 w-full border-0 border-b border-transparent bg-transparent px-0 py-0.5 text-xs outline-none placeholder:text-muted-foreground/50 focus:border-border"
+      </header>
+
+      {/* Content */}
+      <div className="mx-auto max-w-sm md:max-w-2xl px-4 pt-16">
+        {/* Title */}
+        <h1 className="pb-12 text-2xl tracking-tight">{dict.nav.new}</h1>
+
+        {/* Sections */}
+        <div className="divide-y divide-border">
+          {/* Species */}
+          <div className="space-y-2 py-4">
+            <label className="text-xs font-bold text-muted-foreground">{dict.recording.species}</label>
+            <TaxonomySearch
+              placeholder={dict.form.species_placeholder}
+              noResults={dict.form.no_results}
+              searching={dict.form.searching}
+              onSelect={(s) => setSelectedSpecies(s)}
+              onClear={() => setSelectedSpecies(null)}
+            />
+            {selectedSpecies?.kingdom && (
+              <div className="flex items-center gap-2 pt-1">
+                <KingdomBadge
+                  kingdom={selectedSpecies.kingdom as Kingdom}
+                  label={dict.kingdoms[selectedSpecies.kingdom] ?? selectedSpecies.kingdom}
                 />
+                <span className="text-sm text-muted-foreground italic font-sans-ui">
+                  {selectedSpecies.canonicalName}
+                </span>
               </div>
-            ))}
+            )}
           </div>
-        )}
-      </div>
 
-      <Separator />
+          {/* Date */}
+          <div className="space-y-2 py-4">
+            <label className="text-xs font-bold text-muted-foreground">{dict.recording.date}</label>
+            <Popover open={calOpen} onOpenChange={setCalOpen}>
+              <PopoverTrigger
+                className={cn(
+                  buttonVariants({ variant: 'outline' }),
+                  'w-full justify-start font-normal font-sans-ui',
+                )}
+              >
+                <MdIcon name="calendar_today" className="mr-2" />
+                {formatDate(date, lang)}
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={date}
+                  onSelect={(d) => {
+                    if (d) {
+                      setDate(d)
+                      setCalOpen(false)
+                    }
+                  }}
+                  disabled={(d) => d > new Date()}
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
 
-      {/* Notes */}
-      <div className="space-y-2 py-5">
-        <label className="text-sm font-medium">{dict.recording.notes}</label>
-        <Textarea
-          value={notes}
-          onChange={(e) => setNotes(e.target.value)}
-          placeholder={dict.form.notes_placeholder}
-          rows={4}
-        />
-      </div>
+          {/* Location */}
+          <div className="space-y-2 py-4">
+            <label className="text-xs font-bold text-muted-foreground">{dict.recording.location}</label>
+            <Input
+              value={location}
+              onChange={(e) => setLocation(e.target.value)}
+              placeholder={dict.form.location_placeholder}
+              className="font-sans-ui"
+            />
+          </div>
 
-      {error && <p className="text-sm text-destructive pb-3">{error}</p>}
+          {/* Photos */}
+          <div className="space-y-2 py-4">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-bold text-muted-foreground">{dict.recording.photos}</label>
+              <span className="text-xs text-muted-foreground">{dict.form.photos_hint}</span>
+            </div>
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              accept="image/*"
+              className="sr-only"
+              onChange={handleFiles}
+            />
+            {uploadedPhotos.length < 10 && (
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploading}
+                className="flex h-20 w-full items-center justify-center gap-2 rounded-lg border-2 border-dashed border-border text-sm text-muted-foreground transition-colors hover:border-ring hover:text-foreground disabled:opacity-50"
+              >
+                <MdIcon name={uploading ? 'hourglass_empty' : 'add_photo_alternate'} />
+                <span>{uploading ? '…' : dict.recording.photos}</span>
+              </button>
+            )}
+            {uploadedPhotos.length > 0 && (
+              <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+                {uploadedPhotos.map((photo, i) => (
+                  <div key={photo.id}>
+                    <div className="relative aspect-square">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={photo.previewUrl}
+                        alt=""
+                        className="size-full rounded-md object-cover"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removePhoto(i)}
+                        className="absolute -top-1.5 -right-1.5 flex size-5 items-center justify-center rounded-full bg-foreground text-background"
+                        aria-label="Remove photo"
+                      >
+                        <MdIcon name="close" size={14} />
+                      </button>
+                    </div>
+                    <input
+                      type="text"
+                      value={photo.caption}
+                      onChange={(e) => updateCaption(i, e.target.value)}
+                      placeholder={dict.form.caption_placeholder}
+                      className="mt-1 w-full border-0 border-b border-transparent bg-transparent px-0 py-0.5 text-xs outline-none placeholder:text-muted-foreground/50 focus:border-border"
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
 
-      {/* Actions */}
-      <div className="flex gap-3 pb-8">
-        <Link
-          href={collectionHref}
-          className={cn(buttonVariants({ variant: 'outline' }), 'flex-1')}
-        >
-          {dict.actions.cancel}
-        </Link>
-        <Button
-          type="submit"
-          className="flex-1"
-          disabled={!selectedSpecies || isPending || uploading}
-        >
-          {isPending ? '…' : dict.actions.save}
-        </Button>
+          {/* Notes */}
+          <div className="space-y-2 py-4">
+            <label className="text-xs font-bold text-muted-foreground">{dict.recording.notes}</label>
+            <Textarea
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder={dict.form.notes_placeholder}
+              className="font-sans-ui"
+              rows={4}
+            />
+          </div>
+        </div>
+
+        {error && <p className="text-sm text-destructive pt-4">{error}</p>}
       </div>
     </form>
   )

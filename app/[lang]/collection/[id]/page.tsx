@@ -3,7 +3,7 @@ import { auth } from '@/lib/auth'
 import { getDictionary } from '@/lib/i18n/dictionaries'
 import { RecordingService } from '@/lib/services/RecordingService'
 import { buttonVariants } from '@/components/ui/button'
-import { PhotoGrid } from '@/components/recording/PhotoGrid'
+import { PhotoCarousel, PhotoGrid } from '@/components/recording/PhotoGrid'
 import { DetailActions, BackButton } from '@/components/recording/RecordingForm'
 import { formatDate } from '@/lib/utils/date'
 import { cn } from '@/lib/utils'
@@ -66,13 +66,26 @@ export default async function RecordingDetailPage({
         </div>
       </header>
 
-      {/* Content — pt-20 clears the fixed header */}
-      <div className="mx-auto max-w-sm md:max-w-2xl px-4 pt-16">
+      {/* Mobile carousel — full width, at top */}
+      {photos.length > 0 && (
+        <div className="md:hidden pt-14">
+          <PhotoCarousel
+            photos={photos.map((p) => ({ id: p.id, url: p.url, caption: p.caption, width: p.width, height: p.height }))}
+          />
+        </div>
+      )}
+
+      {/* Content */}
+      <div className="mx-auto max-w-sm md:max-w-2xl px-4 pt-8 pb-4 md:pt-16 pb-8">
         {/* Species name + canonical name */}
-        <div className="pb-12 gap-1 flex flex-col">
+        <div className="pb-4 gap-1 flex flex-col">
           <h1 className="text-2xl tracking-tight">{displayName}</h1>
-          {vernacular && species.canonicalName !== displayName && (
-            <p className="text-sm font-sans-ui font-style: italic">{species.canonicalName}</p>
+          {lang === 'zh' && vernacular && species.vernacularNameEn ? (
+            <p className="text-sm font-sans-ui">{species.vernacularNameEn}</p>
+          ) : (
+            vernacular && species.canonicalName !== displayName && (
+              <p className="text-sm font-sans-ui italic">{species.canonicalName}</p>
+            )
           )}
         </div>
 
@@ -96,6 +109,12 @@ export default async function RecordingDetailPage({
             ))}
           </Section>
 
+          {notes && (
+            <Section label={dict.recording.notes}>
+              <span className="whitespace-pre-wrap">{notes}</span>
+            </Section>
+          )}
+
           <Section label={dict.detail.date_added}>
             {formatDate(date, lang)}
           </Section>
@@ -105,17 +124,11 @@ export default async function RecordingDetailPage({
               {location.placeName}
             </Section>
           )}
-
-          {notes && (
-            <Section label={dict.recording.notes}>
-              <span className="whitespace-pre-wrap">{notes}</span>
-            </Section>
-          )}
         </dl>
 
-        {/* Photos */}
+        {/* Desktop photos — at bottom */}
         {photos.length > 0 && (
-          <div className="pt-12 pb-8">
+          <div className="hidden md:block pt-12">
             <PhotoGrid
               photos={photos.map((p) => ({ id: p.id, url: p.url, caption: p.caption, width: p.width, height: p.height }))}
             />
