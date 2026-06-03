@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useState, useTransition } from 'react'
+import { useEffect, useRef, useState, useTransition } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { MdIcon } from '@/components/ui/MdIcon'
@@ -14,9 +14,26 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover'
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+} from '@/components/ui/dropdown-menu'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { TaxonomySearch, type GBIFSuggestion } from '@/components/taxonomy/TaxonomySearch'
 import { KingdomBadge } from '@/components/taxonomy/KingdomBadge'
-import { createRecording } from '@/app/actions/recordings'
+import { createRecording, deleteRecording } from '@/app/actions/recordings'
 import { formatDate } from '@/lib/utils/date'
 import { cn } from '@/lib/utils'
 import type { Kingdom } from '@/lib/models/Species'
@@ -26,6 +43,18 @@ interface UploadedPhoto {
   id: string
   url: string
   previewUrl: string
+  caption: string
+  width: number
+  height: number
+}
+
+function readDimensions(src: string): Promise<{ width: number; height: number }> {
+  return new Promise((resolve) => {
+    const img = new Image()
+    img.onload = () => resolve({ width: img.naturalWidth, height: img.naturalHeight })
+    img.onerror = () => resolve({ width: 0, height: 0 })
+    img.src = src
+  })
 }
 
 interface RecordingFormProps {
@@ -54,16 +83,27 @@ export function RecordingForm({ lang, dict }: RecordingFormProps) {
     if (files.length === 0) return
     setUploading(true)
     try {
-      for (const file of files) {
-        if (uploadedPhotos.length >= 10) break
-        const formData = new FormData()
-        formData.append('file', file)
-        const res = await fetch('/api/upload', { method: 'POST', body: formData })
-        if (!res.ok) continue
-        const { id, url } = await res.json()
-        const previewUrl = URL.createObjectURL(file)
-        setUploadedPhotos((prev) => [...prev, { id, url, previewUrl }].slice(0, 10))
-      }
+      const remaining = 10 - uploadedPhotos.length
+      const batch = files.slice(0, remaining)
+      const results = await Promise.allSettled(
+        batch.map(async (file) => {
+          const formData = new FormData()
+          formData.append('file', file)
+          const previewUrl = URL.createObjectURL(file)
+          const [res, dims] = await Promise.all([
+            fetch('/api/upload', { method: 'POST', body: formData }),
+            readDimensions(previewUrl),
+          ])
+          if (!res.ok) { URL.revokeObjectURL(previewUrl); return null }
+          const { id, url } = await res.json()
+          return { id, url, previewUrl, caption: '', width: dims.width, height: dims.height } as UploadedPhoto
+        }),
+      )
+      const uploaded = results
+        .filter((r): r is PromiseFulfilledResult<UploadedPhoto | null> => r.status === 'fulfilled')
+        .map((r) => r.value)
+        .filter((v): v is UploadedPhoto => v !== null)
+      setUploadedPhotos((prev) => [...prev, ...uploaded].slice(0, 10))
     } finally {
       setUploading(false)
       if (fileInputRef.current) fileInputRef.current.value = ''
@@ -71,8 +111,26 @@ export function RecordingForm({ lang, dict }: RecordingFormProps) {
   }
 
   function removePhoto(index: number) {
-    setUploadedPhotos((prev) => prev.filter((_, i) => i !== index))
+    setUploadedPhotos((prev) => {
+      const removed = prev[index]
+      if (removed) URL.revokeObjectURL(removed.previewUrl)
+      return prev.filter((_, i) => i !== index)
+    })
   }
+
+  function updateCaption(index: number, caption: string) {
+    setUploadedPhotos((prev) =>
+      prev.map((p, i) => (i === index ? { ...p, caption } : p)),
+    )
+  }
+
+  // Revoke all blob URLs on unmount
+  useEffect(() => {
+    return () => {
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+      uploadedPhotos.forEach((p) => URL.revokeObjectURL(p.previewUrl))
+    }
+  }, []) // intentionally empty — cleanup runs on unmount only
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -96,7 +154,7 @@ export function RecordingForm({ lang, dict }: RecordingFormProps) {
           date: date.toISOString(),
           locationPlaceName: location,
           notes,
-          photos: uploadedPhotos.map((p) => ({ id: p.id, url: p.url, caption: '' })),
+          photos: uploadedPhotos.map((p) => ({ id: p.id, url: p.url, caption: p.caption, width: p.width, height: p.height })),
         })
         router.push(collectionHref)
       } catch {
@@ -217,21 +275,30 @@ export function RecordingForm({ lang, dict }: RecordingFormProps) {
         {uploadedPhotos.length > 0 && (
           <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
             {uploadedPhotos.map((photo, i) => (
-              <div key={photo.id} className="relative aspect-square">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={photo.previewUrl}
-                  alt=""
-                  className="size-full rounded-md object-cover"
+              <div key={photo.id}>
+                <div className="relative aspect-square">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={photo.previewUrl}
+                    alt=""
+                    className="size-full rounded-md object-cover"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removePhoto(i)}
+                    className="absolute -top-1.5 -right-1.5 flex size-5 items-center justify-center rounded-full bg-foreground text-background"
+                    aria-label="Remove photo"
+                  >
+                    <MdIcon name="close" size={14} />
+                  </button>
+                </div>
+                <input
+                  type="text"
+                  value={photo.caption}
+                  onChange={(e) => updateCaption(i, e.target.value)}
+                  placeholder={dict.form.caption_placeholder}
+                  className="mt-1 w-full border-0 border-b border-transparent bg-transparent px-0 py-0.5 text-xs outline-none placeholder:text-muted-foreground/50 focus:border-border"
                 />
-                <button
-                  type="button"
-                  onClick={() => removePhoto(i)}
-                  className="absolute -top-1.5 -right-1.5 flex size-5 items-center justify-center rounded-full bg-foreground text-background"
-                  aria-label="Remove photo"
-                >
-                  <MdIcon name="close" size={14} />
-                </button>
               </div>
             ))}
           </div>
@@ -270,5 +337,103 @@ export function RecordingForm({ lang, dict }: RecordingFormProps) {
         </Button>
       </div>
     </form>
+  )
+}
+
+/* ------------------------------------------------------------------ */
+/*  DetailActions — overflow menu for the recording detail page        */
+/* ------------------------------------------------------------------ */
+
+interface DetailActionsProps {
+  recordingId: string
+  editHref: string
+  redirectTo: string
+  labels: {
+    edit: string
+    delete: string
+    deleteTitle: string
+    deleteDescription: string
+    deleteConfirm: string
+    deletePending: string
+    cancel: string
+  }
+}
+
+export function DetailActions({
+  recordingId,
+  editHref,
+  redirectTo,
+  labels,
+}: DetailActionsProps) {
+  const router = useRouter()
+  const [isPending, startTransition] = useTransition()
+  const [alertOpen, setAlertOpen] = useState(false)
+
+  function handleDelete() {
+    startTransition(async () => {
+      await deleteRecording(recordingId)
+      router.push(redirectTo)
+    })
+  }
+
+  return (
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger
+          className={cn(
+            buttonVariants({ variant: 'ghost', size: 'icon-sm' }),
+            'cursor-pointer',
+          )}
+          aria-label="More options"
+        >
+          <MdIcon name="more_horiz" />
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" sideOffset={6} className="bg-neutral-100 font-sans-ui shadow-none ring-0">
+          <DropdownMenuItem disabled>
+            {labels.edit}
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem
+            variant="destructive"
+            onClick={() => setAlertOpen(true)}
+          >
+            {labels.delete}
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      <AlertDialog open={alertOpen} onOpenChange={setAlertOpen}>
+        <AlertDialogContent className="font-sans-ui">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="font-sans-ui">{labels.deleteTitle}</AlertDialogTitle>
+            <AlertDialogDescription>{labels.deleteDescription}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="min-w-20">{labels.cancel}</AlertDialogCancel>
+            <AlertDialogAction
+              variant="destructive"
+              onClick={handleDelete}
+              disabled={isPending}
+              className="min-w-20"
+            >
+              {isPending ? labels.deletePending : labels.deleteConfirm}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
+  )
+}
+
+/* ------------------------------------------------------------------ */
+/*  BackButton — router.back() so URL params are preserved             */
+/* ------------------------------------------------------------------ */
+
+export function BackButton({ label, className }: { label: string; className?: string }) {
+  const router = useRouter()
+  return (
+    <button type="button" onClick={() => router.back()} className={className}>
+      {label}
+    </button>
   )
 }

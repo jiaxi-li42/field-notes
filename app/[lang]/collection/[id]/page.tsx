@@ -1,19 +1,23 @@
-import { Fragment } from 'react'
-import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { auth } from '@/lib/auth'
-import { MdIcon } from '@/components/ui/MdIcon'
 import { getDictionary } from '@/lib/i18n/dictionaries'
 import { RecordingService } from '@/lib/services/RecordingService'
 import { buttonVariants } from '@/components/ui/button'
-import { Separator } from '@/components/ui/separator'
-import { PhotoCarousel } from '@/components/recording/PhotoCarousel'
-import { DeleteButton } from '@/components/recording/DeleteButton'
-import { kingdomColor } from '@/lib/utils/kingdom'
+import { PhotoGrid } from '@/components/recording/PhotoGrid'
+import { DetailActions, BackButton } from '@/components/recording/RecordingForm'
 import { formatDate } from '@/lib/utils/date'
 import { cn } from '@/lib/utils'
 import { langPrefix } from '@/lib/utils/i18n'
 import { buildTaxonRows } from '@/lib/utils/taxonomy'
+
+function Section({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="py-4 md:grid md:grid-cols-3">
+      <dt className="mb-2 md:mb-0 text-xs text-muted-foreground font-bold">{label}</dt>
+      <dd className="text-sm font-sans-ui md:col-span-2">{children}</dd>
+    </div>
+  )
+}
 
 export default async function RecordingDetailPage({
   params,
@@ -37,100 +41,86 @@ export default async function RecordingDetailPage({
   const taxonRows = buildTaxonRows(species.taxon, dict.ranks)
 
   return (
-    <main className="min-h-screen bg-neutral-100">
-      {/* Back button — fixed over the carousel */}
-      <div className="fixed left-0 top-0 z-10 p-4">
-        <Link
-          href={base}
-          className={cn(buttonVariants({ variant: 'ghost', size: 'icon-sm' }))}
-          aria-label={dict.nav.collection}
-        >
-          <MdIcon name="arrow_back" />
-        </Link>
-      </div>
+    <main className="min-h-screen bg-white">
+      {/* Header — fixed */}
+      <header className="fixed left-0 right-0 top-0 z-50 bg-white">
+        <div className="mx-auto flex max-w-sm md:max-w-2xl items-center justify-between p-4">
+          <BackButton
+            label={dict.detail.return}
+            className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }), 'px-2')}
+          />
+          <DetailActions
+          recordingId={id}
+          editHref={`${base === '/' ? '' : base}/collection/${id}/edit`}
+          redirectTo={base}
+          labels={{
+            edit: dict.detail.edit,
+            delete: dict.actions.delete,
+            deleteTitle: dict.detail.delete_title,
+            deleteDescription: dict.detail.delete_description,
+            deleteConfirm: dict.detail.delete_confirm,
+            deletePending: dict.detail.delete_pending,
+            cancel: dict.actions.cancel,
+          }}
+        />
+        </div>
+      </header>
 
-      {/* Photo carousel — full width, no padding */}
-      {photos.length > 0 ? (
-        <PhotoCarousel photos={photos.map((p) => ({ id: p.id, url: p.url, caption: p.caption }))} />
-      ) : (
-        <div className="aspect-[3/4] w-full bg-neutral-200" />
-      )}
-
-      {/* Content */}
-      <div className="mx-auto max-w-sm md:max-w-2xl px-6 pb-12">
-        {/* Species name + kingdom */}
-        <div className="space-y-2 pt-6 pb-5">
+      {/* Content — pt-20 clears the fixed header */}
+      <div className="mx-auto max-w-sm md:max-w-2xl px-4 pt-16">
+        {/* Species name + canonical name */}
+        <div className="pb-12 gap-1 flex flex-col">
           <h1 className="text-2xl tracking-tight">{displayName}</h1>
-          <div className="flex items-center gap-1.5">
-            <span
-              className="size-3 shrink-0 rounded-sm"
-              style={{ backgroundColor: kingdomColor(species.kingdom) }}
-            />
-            <span className="text-sm font-sans-ui">{dict.kingdoms[species.kingdom] ?? species.kingdom}</span>
-          </div>
+          {vernacular && species.canonicalName !== displayName && (
+            <p className="text-sm font-sans-ui font-style: italic">{species.canonicalName}</p>
+          )}
         </div>
 
-        {/* Date added */}
-        <Separator />
-        <div className="py-4">
-          <p className="mb-1 text-xs text-muted-foreground font-sans-ui">{dict.detail.date_added}</p>
-          <p className="text-sm">{formatDate(date, lang)}</p>
-        </div>
-
-        {/* Observed location */}
-        {location.placeName && (
-          <>
-            <Separator />
-            <div className="py-4">
-              <p className="mb-1 text-xs text-muted-foreground font-sans-ui">{dict.detail.observed_location}</p>
-              <p className="text-sm">{location.placeName}</p>
-            </div>
-          </>
-        )}
-
-        {/* Notes */}
-        {notes && (
-          <>
-            <Separator />
-            <div className="py-4">
-              <p className="mb-1 text-xs text-muted-foreground font-sans-ui">{dict.recording.notes}</p>
-              <p className="text-sm whitespace-pre-wrap">{notes}</p>
-            </div>
-          </>
-        )}
-
-        {/* Taxonomy */}
-        <Separator />
-        <div className="py-4">
-          <p className="mb-3 text-xs text-muted-foreground font-sans-ui">{dict.detail.taxonomy}</p>
-          <div className="space-y-1 text-sm">
+        {/* Sections */}
+        <dl className="divide-y divide-border">
+          <Section label={dict.detail.taxonomy}>
             {taxonRows.map(([label, value]) => (
               <p key={label}>
                 <span>{label}</span>
                 <span className="text-muted-foreground"> · </span>
-                <span className={label === dict.ranks.genus || label === dict.ranks.species ? 'italic' : ''}>
+                <span
+                  className={
+                    label === dict.ranks.genus || label === dict.ranks.species
+                      ? 'italic'
+                      : ''
+                  }
+                >
                   {value}
                 </span>
               </p>
             ))}
-          </div>
-        </div>
+          </Section>
 
-        {/* Actions */}
-        <div className="flex flex-col items-center gap-3 pt-4">
-          <Link
-            href={`${base === '/' ? '' : base}/collection/${id}/edit`}
-            className={cn(buttonVariants({ variant: 'default', size: 'default' }), 'w-48')}
-          >
-            {dict.detail.edit}
-          </Link>
-          <DeleteButton
-            recordingId={id}
-            label={dict.actions.delete}
-            confirmMessage={dict.detail.delete_confirm}
-            redirectTo={base}
-          />
-        </div>
+          <Section label={dict.detail.date_added}>
+            {formatDate(date, lang)}
+          </Section>
+
+          {location.placeName && (
+            <Section label={dict.detail.observed_location}>
+              {location.placeName}
+            </Section>
+          )}
+
+          {notes && (
+            <Section label={dict.recording.notes}>
+              <span className="whitespace-pre-wrap">{notes}</span>
+            </Section>
+          )}
+        </dl>
+
+        {/* Photos */}
+        {photos.length > 0 && (
+          <div className="pt-12 pb-8">
+            <PhotoGrid
+              photos={photos.map((p) => ({ id: p.id, url: p.url, caption: p.caption, width: p.width, height: p.height }))}
+            />
+          </div>
+        )}
       </div>
     </main>
   )

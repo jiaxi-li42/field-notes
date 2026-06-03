@@ -45,12 +45,15 @@ export type Dictionary = {
     species: string
   }
   detail: {
+    return: string
     taxonomy: string
-    all_recordings: string
     date_added: string
     observed_location: string
     edit: string
+    delete_title: string
+    delete_description: string
     delete_confirm: string
+    delete_pending: string
   }
   auth: {
     login: string
@@ -76,6 +79,7 @@ export type Dictionary = {
     location_placeholder: string
     notes_placeholder: string
     photos_hint: string
+    caption_placeholder: string
     no_results: string
     searching: string
     save_error: string

@@ -97,6 +97,8 @@ interface CollectionViewProps {
   circleData: CircleCardData[]
   /** Active kingdom filters — highlights matching nodes in the tree instead of hiding cards. */
   activeKingdoms: Kingdom[]
+  /** Active view from URL. */
+  activeView: 'grid' | 'circle'
   /** Active sort option. */
   activeSort: SortOption
   /** Localised taxonomy rank labels (phylum, class, etc.) for the tree hover label. */
@@ -122,6 +124,7 @@ interface CollectionViewProps {
 export function CollectionView({
   circleData,
   activeKingdoms,
+  activeView,
   activeSort,
   rankLabels,
   sortByLabel,
@@ -142,7 +145,7 @@ export function CollectionView({
   const prefix = langPrefix(lang)
   const base = prefix || '/'
 
-  const [view, setView] = useState<'grid' | 'circle'>('grid')
+  const [view, setView] = useState<'grid' | 'circle'>(activeView)
   const isEmpty = circleData.length === 0
   const canCircle = circleData.length >= 5
 
@@ -153,11 +156,12 @@ export function CollectionView({
   }, [circleData])
   const hasFilter = activeKingdoms.length > 0
 
-  // ── URL builder — preserves both sort and kingdom params ───────────────────
-  function buildUrl(sort: SortOption, kingdoms: Kingdom[]) {
+  // ── URL builder — preserves sort, kingdom, and view params ─────────────────
+  function buildUrl(sort: SortOption, kingdoms: Kingdom[], v: 'grid' | 'circle' = view) {
     const params = new URLSearchParams()
     if (sort !== 'kingdom') params.set('sort', sort)
     if (kingdoms.length > 0) params.set('kingdom', kingdoms.join(','))
+    if (v === 'circle') params.set('view', 'circle')
     const qs = params.toString()
     return qs ? `${base}?${qs}` : base
   }
@@ -400,7 +404,11 @@ export function CollectionView({
             variant="ghost"
             size="sm"
             className="gap-1 px-2"
-            onClick={() => setView(v => (v === 'grid' ? 'circle' : 'grid'))}
+            onClick={() => {
+              const next = view === 'grid' ? 'circle' : 'grid'
+              setView(next)
+              router.replace(buildUrl(activeSort, activeKingdoms, next), { scroll: false })
+            }}
             aria-label="Switch view"
           >
             <MdIcon name="swap_horiz" />

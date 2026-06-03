@@ -35,5 +35,7 @@ export const photos = sqliteTable('photos', {
   recordingId: text('recording_id').notNull().references(() => recordings.id, { onDelete: 'cascade' }),
   url: text('url').notNull(),
   caption: text('caption').notNull().default(''),
+  width: integer('width').notNull().default(0),
+  height: integer('height').notNull().default(0),
   sortOrder: integer('sort_order').notNull().default(0),
 })

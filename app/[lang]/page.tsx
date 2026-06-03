@@ -24,13 +24,13 @@ export default async function HomePage({
   searchParams,
 }: {
   params: Promise<{ lang: string }>
-  searchParams: Promise<{ kingdom?: string; sort?: string }>
+  searchParams: Promise<{ kingdom?: string; sort?: string; view?: string }>
 }) {
   const { lang } = await params
   const session = await auth()
   if (!session?.user?.id) redirect(`${lang === 'zh' ? '/zh' : ''}/login`)
 
-  const { kingdom: kingdomParam, sort: sortParam } = await searchParams
+  const { kingdom: kingdomParam, sort: sortParam, view: viewParam } = await searchParams
   const dict = await getDictionary(lang)
 
   // Multi-select: ?kingdom=Animalia,Plantae → ['Animalia', 'Plantae']
@@ -106,6 +106,7 @@ export default async function HomePage({
           circleData={circleData}
           activeKingdoms={activeKingdoms}
           rankLabels={dict.ranks}
+          activeView={viewParam === 'circle' ? 'circle' : 'grid'}
           activeSort={activeSort}
           sortByLabel={dict.header.sort_by}
           sortLabels={{ name: dict.header.sort_name, date: dict.header.sort_date, kingdom: dict.header.sort_kingdom }}

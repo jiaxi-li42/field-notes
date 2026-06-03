@@ -13,7 +13,7 @@
   "recording": {
     "date": "Date",
     "location": "Location",
-    "notes": "Notes",
+    "notes": "notes",
     "species": "Species",
     "photos": "Photos"
   },
@@ -51,11 +51,14 @@
   },
   "detail": {
     "taxonomy": "taxonomy",
-    "all_recordings": "All recordings of this species",
     "date_added": "date added",
     "observed_location": "observed location",
-    "edit": "edit",
-    "delete_confirm": "Are you sure you want to delete this recording?"
+    "return": "return",
+    "edit": "Edit",
+    "delete_title": "Are you sure?",
+    "delete_description": "This action cannot be undone. This will permanently delete this record.",
+    "delete_confirm": "Delete",
+    "delete_pending": "Deleting…"
   },
   "actions": {
     "save": "Save",
@@ -87,6 +90,7 @@
     "photos_hint": "Up to 10 images",
     "no_results": "No species found",
     "searching": "Searching…",
+    "caption_placeholder": "Add a caption",
     "save_error": "Failed to save. Please try again."
   }
 }

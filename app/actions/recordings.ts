@@ -1,5 +1,6 @@
 'use server'
 
+import { revalidatePath } from 'next/cache'
 import { auth } from '@/lib/auth'
 import { RecordingService } from '@/lib/services/RecordingService'
 import { Species } from '@/lib/models/Species'
@@ -22,7 +23,7 @@ export type RecordingPayload = {
   date: string
   locationPlaceName: string
   notes: string
-  photos: { id: string; url: string; caption: string }[]
+  photos: { id: string; url: string; caption: string; width: number; height: number }[]
 }
 
 export async function createRecording(payload: RecordingPayload): Promise<{ id: string }> {
@@ -54,6 +55,7 @@ export async function createRecording(payload: RecordingPayload): Promise<{ id: 
     photos: payload.photos,
     notes: payload.notes,
   })
+  revalidatePath('/')
   return { id: recording.id }
 }
 
@@ -61,4 +63,5 @@ export async function deleteRecording(id: string): Promise<void> {
   const session = await auth()
   if (!session?.user?.id) throw new Error('Unauthorized')
   await RecordingService.delete(session.user.id, id)
+  revalidatePath('/')
 }

@@ -1,5 +1,5 @@
 import 'server-only'
-import { eq, desc } from 'drizzle-orm'
+import { eq, desc, inArray } from 'drizzle-orm'
 import { db } from '@/lib/db'
 import { recordings, photos } from '@/lib/db/schema'
 import { Recording } from '@/lib/models/Recording'
@@ -8,6 +8,7 @@ import type { Kingdom } from '@/lib/models/Species'
 import { Taxon } from '@/lib/models/Taxon'
 import { Location } from '@/lib/models/Location'
 import { Photo } from '@/lib/models/Photo'
+import { StorageService } from '@/lib/services/StorageService'
 
 type RecordingRow = typeof recordings.$inferSelect
 type PhotoRow = typeof photos.$inferSelect
@@ -37,7 +38,7 @@ function hydrate(row: RecordingRow, photoRows: PhotoRow[]): Recording {
   )
   const photoList = photoRows
     .sort((a, b) => a.sortOrder - b.sortOrder)
-    .map((p) => new Photo(p.url, p.caption, p.id))
+    .map((p) => new Photo(p.url, p.caption, p.id, p.width, p.height))
 
   return new Recording(
     row.id,
@@ -54,7 +55,7 @@ export type CreateRecordingInput = {
   species: Species
   date: Date
   location: Location
-  photos: { id: string; url: string; caption: string }[]
+  photos: { id: string; url: string; caption: string; width: number; height: number }[]
   notes: string
 }
 
@@ -66,15 +67,23 @@ export class RecordingService {
       .where(eq(recordings.userId, userId))
       .orderBy(desc(recordings.date))
 
-    const results: Recording[] = []
-    for (const row of rows) {
-      const photoRows = await db
-        .select()
-        .from(photos)
-        .where(eq(photos.recordingId, row.id))
-      results.push(hydrate(row, photoRows))
+    if (rows.length === 0) return []
+
+    // Batch: single query for all photos instead of N+1
+    const recordingIds = rows.map((r) => r.id)
+    const allPhotos = await db
+      .select()
+      .from(photos)
+      .where(inArray(photos.recordingId, recordingIds))
+
+    const photosByRecording = new Map<string, PhotoRow[]>()
+    for (const p of allPhotos) {
+      const list = photosByRecording.get(p.recordingId) ?? []
+      list.push(p)
+      photosByRecording.set(p.recordingId, list)
     }
-    return results
+
+    return rows.map((row) => hydrate(row, photosByRecording.get(row.id) ?? []))
   }
 
   static async getById(userId: string, id: string): Promise<Recording | null> {
@@ -128,12 +137,14 @@ export class RecordingService {
           recordingId: id,
           url: p.url,
           caption: p.caption,
+          width: p.width,
+          height: p.height,
           sortOrder: i,
         })),
       )
     }
 
-    const photoList = input.photos.map((p) => new Photo(p.url, p.caption, p.id))
+    const photoList = input.photos.map((p) => new Photo(p.url, p.caption, p.id, p.width, p.height))
     return new Recording(
       id,
       input.species,
@@ -154,7 +165,16 @@ export class RecordingService {
 
     if (!row || row.userId !== userId) return
 
+    // Clean up R2 photos before deleting DB rows
+    const photoRows = await db
+      .select({ url: photos.url })
+      .from(photos)
+      .where(eq(photos.recordingId, id))
+
     await db.delete(photos).where(eq(photos.recordingId, id))
     await db.delete(recordings).where(eq(recordings.id, id))
+
+    // Delete from R2 in background (non-blocking)
+    Promise.allSettled(photoRows.map((p) => StorageService.deletePhoto(p.url)))
   }
 }

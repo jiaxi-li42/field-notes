@@ -51,11 +51,14 @@
   },
   "detail": {
     "taxonomy": "分类",
-    "all_recordings": "该物种的所有记录",
     "date_added": "添加日期",
     "observed_location": "观察地点",
+    "return": "返回",
     "edit": "编辑",
-    "delete_confirm": "确定要删除这条记录吗？"
+    "delete_title": "确定删除？",
+    "delete_description": "此操作无法撤销，该记录将被永久删除。",
+    "delete_confirm": "删除",
+    "delete_pending": "删除中…"
   },
   "actions": {
     "save": "保存",
@@ -87,6 +90,7 @@
     "photos_hint": "最多10张图片",
     "no_results": "未找到物种",
     "searching": "搜索中…",
+    "caption_placeholder": "添加说明",
     "save_error": "保存失败，请重试。"
   }
 }
