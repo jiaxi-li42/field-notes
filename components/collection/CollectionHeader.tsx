@@ -62,11 +62,11 @@ export function CollectionHeader({ lang, dict }: CollectionHeaderProps) {
 
         {/* Right -- search + add */}
         <div className="flex items-center gap-1">
-          <Button variant="ghost" size="sm" className="gap-1 px-2" disabled aria-label="Search">
+          <Button variant="ghost" size="sm" className="gap-1 px-2 lowercase" disabled aria-label="Search">
             <MdIcon name="search" />
             {dict.header.search}
           </Button>
-          <Link href={addHref} className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }), 'px-2')}>
+          <Link href={addHref} className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }), 'px-2 lowercase')}>
             {dict.header.add}
           </Link>
         </div>

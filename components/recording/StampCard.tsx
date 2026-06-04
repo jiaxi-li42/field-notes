@@ -11,7 +11,10 @@ interface StampCardProps {
 
 export function StampCard({ recording, lang, href, rotate = 0 }: StampCardProps) {
   const { species, photos } = recording
-  const vernacular = lang === 'zh' ? species.vernacularNameZh : species.vernacularNameEn
+  const isZhName = lang === 'zh' && !!species.vernacularNameZh
+  const vernacular = lang === 'zh'
+    ? species.vernacularNameZh || species.vernacularNameEn
+    : species.vernacularNameEn
   const displayName = vernacular || species.canonicalName
   const photo = photos[0]
 
@@ -38,7 +41,10 @@ export function StampCard({ recording, lang, href, rotate = 0 }: StampCardProps)
           {/* Species name — max 2 lines.
               en: font-bold (700) with NanumMyeongjo
               zh: auto-downgraded to medium (500) via globals.css */}
-          <p className="pr-2 pb-0.5 line-clamp-2 text-xs font-bold leading-tight">
+          <p
+            className="pr-2 pb-0.5 line-clamp-2 text-xs font-bold leading-tight"
+            style={lang === 'zh' && !isZhName ? { fontWeight: 700 } : undefined}
+          >
             {displayName}
           </p>
         </div>

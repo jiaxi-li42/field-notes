@@ -2,29 +2,78 @@ import { NextRequest, NextResponse } from 'next/server'
 
 const INAT_SEARCH = 'https://api.inaturalist.org/v1/taxa'
 
+type InatAncestor = {
+  rank?: string
+  name?: string
+  preferred_common_name?: string
+}
+
+const TARGET_RANKS = ['kingdom', 'phylum', 'class', 'order', 'family', 'genus'] as const
+
 /**
- * Resolve a scientific name to its Chinese vernacular name via iNaturalist.
+ * Resolve a scientific name to its Chinese vernacular name + zh taxonomy
+ * via iNaturalist.
  * GET /api/taxonomy/resolve?name=Quercus+robur
  */
 export async function GET(request: NextRequest) {
   const name = request.nextUrl.searchParams.get('name')?.trim()
-  if (!name) return NextResponse.json({ vernacularNameZh: '' })
+  if (!name) return NextResponse.json({ vernacularNameZh: '', taxonZh: null })
 
-  const url = new URL(INAT_SEARCH)
-  url.searchParams.set('q', name)
-  url.searchParams.set('locale', 'zh')
-  url.searchParams.set('per_page', '1')
-  url.searchParams.set('is_active', 'true')
+  // Step 1: Search for the taxon
+  const searchUrl = new URL(INAT_SEARCH)
+  searchUrl.searchParams.set('q', name)
+  searchUrl.searchParams.set('locale', 'zh-CN')
+  searchUrl.searchParams.set('per_page', '10')
+  searchUrl.searchParams.set('is_active', 'true')
 
-  const res = await fetch(url.toString(), { next: { revalidate: 86400 } })
-  if (!res.ok) return NextResponse.json({ vernacularNameZh: '' })
+  const searchRes = await fetch(searchUrl.toString(), { next: { revalidate: 86400 } })
+  if (!searchRes.ok) return NextResponse.json({ vernacularNameZh: '', taxonZh: null })
 
-  const data = await res.json()
-  const taxon = (data.results ?? [])[0]
+  const searchData = await searchRes.json()
+  const results = (searchData.results ?? []) as {
+    id?: number
+    name?: string
+    preferred_common_name?: string
+  }[]
 
-  // Only use the result if the scientific name matches
-  const vernacularNameZh =
-    taxon && taxon.name === name ? (taxon.preferred_common_name ?? '') : ''
+  // Find the first result whose scientific name matches AND has a zh name
+  const match = results.find(
+    (t) => t.name === name && t.preferred_common_name,
+  )
+  const vernacularNameZh = match?.preferred_common_name ?? ''
 
-  return NextResponse.json({ vernacularNameZh })
+  // Step 2: Fetch ancestor details for zh taxonomy names
+  // Use the matched taxon (or first exact-name match) to get ancestors
+  const taxonForAncestors = match ?? results.find((t) => t.name === name)
+  let taxonZh: Record<string, string> | null = null
+
+  if (taxonForAncestors?.id) {
+    try {
+      const detailUrl = `${INAT_SEARCH}/${taxonForAncestors.id}?locale=zh-CN`
+      const detailRes = await fetch(detailUrl, { next: { revalidate: 86400 } })
+      if (detailRes.ok) {
+        const detailData = await detailRes.json()
+        const taxonResult = detailData.results?.[0]
+        const ancestors: InatAncestor[] = taxonResult?.ancestors ?? []
+
+        taxonZh = {}
+        for (const ancestor of ancestors) {
+          const rank = ancestor.rank?.toLowerCase()
+          if (
+            rank &&
+            TARGET_RANKS.includes(rank as (typeof TARGET_RANKS)[number]) &&
+            ancestor.preferred_common_name
+          ) {
+            taxonZh[rank] = ancestor.preferred_common_name
+          }
+        }
+        // Only return if we found at least one zh name
+        if (Object.keys(taxonZh).length === 0) taxonZh = null
+      }
+    } catch {
+      // Non-critical — zh taxonomy is optional
+    }
+  }
+
+  return NextResponse.json({ vernacularNameZh, taxonZh })
 }

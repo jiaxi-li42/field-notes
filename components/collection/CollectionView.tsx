@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useMemo, useRef, type PointerEvent as RPointerEvent } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Button, buttonVariants } from '@/components/ui/button'
@@ -60,6 +60,18 @@ const SWIPE_THRESHOLD = 40
 
 const kingdoms: Kingdom[] = ['Animalia', 'Plantae', 'Fungi', 'Protista', 'Monera']
 
+/** Hit-test the element stack at (clientX, clientY) for a card or tree node. */
+function hitTestTarget(clientX: number, clientY: number): { type: 'card'; index: number } | { type: 'node'; id: string } | null {
+  const elements = document.elementsFromPoint(clientX, clientY)
+  for (const el of elements) {
+    const ci = (el as HTMLElement).dataset?.cardIndex
+    if (ci !== undefined) return { type: 'card', index: Number(ci) }
+    const ni = (el as SVGElement).dataset?.nodeId
+    if (ni !== undefined) return { type: 'node', id: ni }
+  }
+  return null
+}
+
 // ── Helpers ──────────────────────────────────────────────────────────────────
 /** Shortest angular distance (wrapping), result in [-max/2, max/2]. */
 const shortestAngle = (a0: number, a1: number, max = Math.PI * 2) => {
@@ -80,7 +92,7 @@ export interface CircleCardData {
   photoUrl: string | undefined
   displayName: string
   href: string
-  // Taxonomy fields for tree visualisation
+  // Taxonomy fields for tree visualisation (English — grouping key)
   kingdom: Kingdom
   phylum: string
   taxonomyClass: string
@@ -88,6 +100,13 @@ export interface CircleCardData {
   family: string
   genus: string
   species: string
+  // zh taxonomy display names (optional — only present on zh locale)
+  kingdomZh?: string
+  phylumZh?: string
+  taxonomyClassZh?: string
+  orderZh?: string
+  familyZh?: string
+  genusZh?: string
 }
 
 export type SortOption = 'name' | 'date' | 'kingdom'
@@ -194,18 +213,102 @@ export function CollectionView({
     setIdx(0)
   }, [])
 
-  // Debounce card hover leave so the tree highlight stays stable between cards.
-  const cardLeaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  // Debounce card hover / touch-peek so the tree highlight stays stable.
+  const peekLeaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const handleCardEnter = useCallback((i: number) => {
-    if (cardLeaveTimer.current) { clearTimeout(cardLeaveTimer.current); cardLeaveTimer.current = null }
+    if (peekLeaveTimer.current) { clearTimeout(peekLeaveTimer.current); peekLeaveTimer.current = null }
     setHovered(i)
   }, [])
   const handleCardLeave = useCallback(() => {
-    cardLeaveTimer.current = setTimeout(() => {
+    peekLeaveTimer.current = setTimeout(() => {
       setHovered(null)
-      cardLeaveTimer.current = null
+      peekLeaveTimer.current = null
     }, 150)
   }, [])
+
+  // ── Unified mobile long-press peek (cards + tree nodes) ─────────────────
+  // One system at the container level: long-press to peek, drag across cards
+  // and tree nodes seamlessly, tap to zoom / pin.
+  const [peekedNodeId, setPeekedNodeId] = useState<string | null>(null)
+  const peekingRef = useRef(false)
+  const suppressClickRef = useRef(false)
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  // Dedup: skip state updates when the drag target hasn't changed.
+  const lastPeekTarget = useRef<string | null>(null)
+  const LONG_PRESS_MS = 300
+
+  /** Apply a hit-test result: set the matching hover/peek state, clear the other. */
+  const applyPeekTarget = useCallback((target: ReturnType<typeof hitTestTarget>) => {
+    const key = target ? `${target.type}:${'index' in target ? target.index : target.id}` : null
+    if (key === lastPeekTarget.current) return           // dedup — same target
+    lastPeekTarget.current = key
+    if (peekLeaveTimer.current) { clearTimeout(peekLeaveTimer.current); peekLeaveTimer.current = null }
+    if (target?.type === 'card')      { setHovered(target.index); setPeekedNodeId(null) }
+    else if (target?.type === 'node') { setPeekedNodeId(target.id); setHovered(null) }
+    else {
+      peekLeaveTimer.current = setTimeout(() => {
+        setHovered(null)
+        setPeekedNodeId(null)
+        lastPeekTarget.current = null
+        peekLeaveTimer.current = null
+      }, 300)
+    }
+  }, [])
+
+  const handleRingPointerDown = useCallback((e: React.PointerEvent) => {
+    // Swipe handler (zoomed mode)
+    if (zoomed && e.pointerType === 'touch') {
+      swipeRef.current = { x: e.clientX, y: e.clientY, id: e.pointerId }
+    }
+    if (e.pointerType !== 'touch' || zoomed) return
+
+    suppressClickRef.current = false
+    const target = hitTestTarget(e.clientX, e.clientY)
+    if (!target) return
+
+    // Start long-press timer → enters peek mode after delay
+    if (longPressTimer.current) clearTimeout(longPressTimer.current)
+    longPressTimer.current = setTimeout(() => {
+      peekingRef.current = true
+      suppressClickRef.current = true
+      lastPeekTarget.current = null               // force first applyPeekTarget through
+      applyPeekTarget(target)
+      longPressTimer.current = null
+    }, LONG_PRESS_MS)
+  }, [zoomed, applyPeekTarget])
+
+  const handleRingPointerUp = useCallback((e: React.PointerEvent) => {
+    // Swipe handler (zoomed mode)
+    const start = swipeRef.current
+    if (start && start.id === e.pointerId) {
+      swipeRef.current = null
+      const dx = e.clientX - start.x
+      const dy = e.clientY - start.y
+      if (Math.abs(dx) > SWIPE_THRESHOLD && Math.abs(dx) > Math.abs(dy)) {
+        e.stopPropagation()
+        setIdx(prev => prev + (dx < 0 ? 1 : -1))
+      }
+    }
+    if (e.pointerType !== 'touch') return
+    // Cancel pending long-press if finger lifted early
+    if (longPressTimer.current) { clearTimeout(longPressTimer.current); longPressTimer.current = null }
+    if (!peekingRef.current) return
+    peekingRef.current = false
+    lastPeekTarget.current = null
+    // Debounced clear both hover + peeked node
+    if (peekLeaveTimer.current) clearTimeout(peekLeaveTimer.current)
+    peekLeaveTimer.current = setTimeout(() => {
+      setHovered(null)
+      setPeekedNodeId(null)
+      peekLeaveTimer.current = null
+    }, 300)
+  }, [])
+
+  // Drag-to-switch: find card or tree node under finger
+  const handleRingPointerMove = useCallback((e: React.PointerEvent) => {
+    if (e.pointerType !== 'touch' || !peekingRef.current) return
+    applyPeekTarget(hitTestTarget(e.clientX, e.clientY))
+  }, [applyPeekTarget])
 
   // ── Measure the flex-1 ring area so geometry reacts to the actual space ─────
   const ringAreaRef = useRef<HTMLDivElement>(null)
@@ -276,25 +379,8 @@ export function CollectionView({
     return () => window.removeEventListener('keydown', handleKey)
   }, [isCircle, zoomed, resetZoom])
 
-  // ── Swipe gesture when zoomed (touch only) ─────────────────────────────────
+  // Swipe ref for zoomed mode (handled inside handleRingPointerDown/Up).
   const swipeRef = useRef<{ x: number; y: number; id: number } | null>(null)
-
-  const onPointerDown = useCallback((e: RPointerEvent) => {
-    if (!zoomed || e.pointerType !== 'touch') return
-    swipeRef.current = { x: e.clientX, y: e.clientY, id: e.pointerId }
-  }, [zoomed])
-
-  const onPointerUp = useCallback((e: RPointerEvent) => {
-    const start = swipeRef.current
-    if (!start || start.id !== e.pointerId) return
-    swipeRef.current = null
-    const dx = e.clientX - start.x
-    const dy = e.clientY - start.y
-    if (Math.abs(dx) > SWIPE_THRESHOLD && Math.abs(dx) > Math.abs(dy)) {
-      e.stopPropagation()
-      setIdx(prev => prev + (dx < 0 ? 1 : -1))
-    }
-  }, [])
 
   // Reset interaction state when leaving circle view
   useEffect(() => {
@@ -303,6 +389,7 @@ export function CollectionView({
 
   const handleCardClick = useCallback((e: React.MouseEvent, i: number) => {
     e.stopPropagation()
+    if (suppressClickRef.current) { suppressClickRef.current = false; return }
     if (!zoomed) {
       setZoomed(true)
       setIdx(prev => prev + shortestAngle(prev, i, count))
@@ -341,7 +428,7 @@ export function CollectionView({
               disabled={isEmpty}
               className={cn(
                 buttonVariants({ variant: hasFilter ? 'outline' : 'ghost', size: 'sm' }),
-                'gap-1 px-2 cursor-pointer',
+                'gap-1 px-2 lowercase cursor-pointer',
               )}
               aria-label="Filter by kingdom"
             >
@@ -392,7 +479,7 @@ export function CollectionView({
           <Button
             variant="ghost"
             size="sm"
-            className="gap-1 px-2 ml-auto"
+            className="gap-1 px-2 ml-auto lowercase"
             onClick={resetZoom}
             aria-label="Exit fullscreen"
           >
@@ -403,7 +490,7 @@ export function CollectionView({
           <Button
             variant="ghost"
             size="sm"
-            className="gap-1 px-2"
+            className="gap-1 px-2 lowercase"
             onClick={() => {
               const next = view === 'grid' ? 'circle' : 'grid'
               setView(next)
@@ -420,7 +507,7 @@ export function CollectionView({
               disabled={isEmpty}
               className={cn(
                 buttonVariants({ variant: 'ghost', size: 'sm' }),
-                'gap-1 px-2 cursor-pointer',
+                'gap-1 px-2 lowercase cursor-pointer',
               )}
               aria-label="Switch view"
             >
@@ -444,10 +531,12 @@ export function CollectionView({
       {isCircle && (
         <div
           ref={ringAreaRef}
-          className="relative flex flex-1 items-center justify-center touch-pan-y"
+          className="relative flex flex-1 items-center justify-center touch-none"
           style={{ overflowX: 'visible', overflowY: 'clip' }}
-          onPointerDown={onPointerDown}
-          onPointerUp={onPointerUp}
+          onPointerDown={handleRingPointerDown}
+          onPointerUp={handleRingPointerUp}
+          onPointerCancel={handleRingPointerUp}
+          onPointerMove={handleRingPointerMove}
         >
           {/* Ring canvas */}
           <div
@@ -497,6 +586,7 @@ export function CollectionView({
               return (
                 <div
                   key={card.id}
+                  data-card-index={i}
                   className="absolute transition-transform duration-300 ease-in-out"
                   style={{
                     width: naturalW,
@@ -532,6 +622,8 @@ export function CollectionView({
               activeKingdoms={activeKingdoms}
               rankLabels={rankLabels}
               idx={idx}
+              peekedNodeId={peekedNodeId}
+              suppressClickRef={suppressClickRef}
             />
           </div>
 
@@ -551,7 +643,7 @@ export function CollectionView({
               )}
 
               <div className="w-60 text-center">
-                <p className={`truncate text-sm font-semibold`}>
+                <p className="truncate text-sm font-semibold">
                   {captionCard.displayName}
                 </p>
               </div>

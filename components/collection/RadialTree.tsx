@@ -19,10 +19,14 @@ const NEUTRAL_NODE = 'var(--foreground)'
 const DIM_OPACITY = 0.1
 // Fraction of the ring interior the tree fills (0–1).
 // 1 = genus ring touches the inner card edge; 0.7 = 30% gap.
-const TREE_RADIUS_RATIO = 0.95
+const TREE_RADIUS_RATIO         = 0.95
+const TREE_RADIUS_RATIO_MOBILE  = 0.9
 // Fraction of the tree radius reserved as the inner hole (donut).
 // 0 = no hole (kingdom ring at centre), 0.5 = inner half is empty.
-const INNER_RADIUS_RATIO = 0.7
+const INNER_RADIUS_RATIO        = 0.7
+const INNER_RADIUS_RATIO_MOBILE = 0.55
+// Breakpoint (px): containerSize below this uses mobile ratios.
+const MOBILE_BREAKPOINT = 640
 // Per-depth ring weights — controls the radial spacing of each concentric ring.
 // Depth 1 = kingdom, 2 = phylum, …, 6 = genus, 7 = species (leaves, not rendered).
 // Index 0 is skipped (root is hidden). Equal values = even spacing.
@@ -70,6 +74,10 @@ interface RadialTreeProps {
   activeKingdoms: Kingdom[]
   rankLabels: Record<string, string>
   idx: number
+  /** Node id peeked from the container's touch-drag system (mobile). */
+  peekedNodeId?: string | null
+  /** Shared ref — when true the next click is suppressed (long-press just ended). */
+  suppressClickRef?: React.RefObject<boolean>
 }
 
 // ── Component ───────────────────────────────────────────────────────────────
@@ -85,6 +93,8 @@ export function RadialTree({
   activeKingdoms,
   rankLabels,
   idx,
+  peekedNodeId,
+  suppressClickRef,
 }: RadialTreeProps) {
   const [hoveredNode, setHoveredNode] = useState<HierarchyPointNode<TaxonTreeNode> | null>(null)
   const [pinnedNode, setPinnedNode] = useState<HierarchyPointNode<TaxonTreeNode> | null>(null)
@@ -97,8 +107,13 @@ export function RadialTree({
     setHoveredNode(null)
   }, [cards, activeKingdoms])
 
+  // Responsive ratios based on container size.
+  const isMobile = containerSize < MOBILE_BREAKPOINT
+  const treeRatio = isMobile ? TREE_RADIUS_RATIO_MOBILE : TREE_RADIUS_RATIO
+  const innerRatio = isMobile ? INNER_RADIUS_RATIO_MOBILE : INNER_RADIUS_RATIO
+
   // Screen-space radius: the outer edge of the tree layout.
-  const screenRadius = innerRadius * currentScale * TREE_RADIUS_RATIO
+  const screenRadius = innerRadius * currentScale * treeRatio
 
   // ── Compute tree layout in screen-space ─────────────────────────────────
   const { root: layoutRoot, nodeMap } = useMemo(() => {
@@ -117,7 +132,7 @@ export function RadialTree({
     // Per-depth ring spacing: the inner hole (INNER_RADIUS_RATIO) is reserved;
     // the remaining band is split among depths 1+ by weight.
     // Depth 0 (root, hidden) stays at centre.
-    const innerHole = screenRadius * INNER_RADIUS_RATIO
+    const innerHole = screenRadius * innerRatio
     const band = screenRadius - innerHole
     const maxDepth = laid.height
     // Skip weight[0] (root→kingdom gap) since root is hidden.
@@ -164,15 +179,35 @@ export function RadialTree({
     }
 
     return { root: laid, nodeMap: map }
-  }, [cards, count, screenRadius, angleStep])
+  }, [cards, count, screenRadius, innerRatio, angleStep])
+
+  // ── Node lookup (memoized) ─────────────────────────────────────────────────
+  const { allNodes, nodeById } = useMemo(() => {
+    if (!layoutRoot) return { allNodes: [] as HierarchyPointNode<TaxonTreeNode>[], nodeById: new Map<string, HierarchyPointNode<TaxonTreeNode>>() }
+    const all = layoutRoot.descendants()
+    const map = new Map<string, HierarchyPointNode<TaxonTreeNode>>()
+    for (const node of all) {
+      if (node.depth === 0 || node.data.rank === 'species') continue
+      map.set(nodeId(node), node)
+    }
+    return { allNodes: all, nodeById: map }
+  }, [layoutRoot])
+
+  // Resolve peekedNodeId (from container touch-drag) to a node.
+  const peekedNode = peekedNodeId ? nodeById.get(peekedNodeId) ?? null : null
 
   // ── Highlighted node set ──────────────────────────────────────────────────
-  // Priority: pinned > hover > ring card hover > kingdom filter.
-  const highlightSource = pinnedNode ?? hoveredNode
+  // Priority: hover (desktop) > peek (mobile touch) > pin > card hover > kingdom filter.
+  const highlightSource = hoveredNode ?? peekedNode ?? pinnedNode
   const highlightedIds = useMemo(() => {
+    // Priority: card hover > tree node (hover/peek/pin) > kingdom filter.
+    if (hoveredCardIndex !== null) {
+      const leaf = nodeMap.get(hoveredCardIndex)
+      if (leaf) return collectAncestorIds(leaf)
+    }
     if (highlightSource) {
       const ids = collectDescendantIds(highlightSource)
-      // Hover only: also highlight same-depth nodes that share the kingdom.
+      // Hover/peek only: also highlight same-depth nodes that share the kingdom.
       if (!pinnedNode && layoutRoot && highlightSource.data.kingdom) {
         const depth = highlightSource.depth
         const kingdom = highlightSource.data.kingdom
@@ -183,10 +218,6 @@ export function RadialTree({
         }
       }
       return ids
-    }
-    if (hoveredCardIndex !== null) {
-      const leaf = nodeMap.get(hoveredCardIndex)
-      if (leaf) return collectAncestorIds(leaf)
     }
     if (activeKingdoms.length > 0 && layoutRoot) {
       const ids = new Set<string>()
@@ -211,22 +242,29 @@ export function RadialTree({
   const depthRingColor = depthRingKingdom ? kingdomColor(depthRingKingdom) : NEUTRAL_NODE
 
   // ── Event handlers ────────────────────────────────────────────────────────
-  // Debounce leave so the depth ring stays visible while moving between nodes.
+  // Desktop: hover to peek label (debounced leave).
   const leaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const handleNodeEnter = useCallback((node: HierarchyPointNode<TaxonTreeNode>) => {
+  const handlePointerEnter = useCallback((e: React.PointerEvent, node: HierarchyPointNode<TaxonTreeNode>) => {
+    if (e.pointerType === 'touch') return
     if (leaveTimer.current) { clearTimeout(leaveTimer.current); leaveTimer.current = null }
     setHoveredNode(node)
   }, [])
-  const handleNodeLeave = useCallback(() => {
+  const handlePointerLeave = useCallback((e: React.PointerEvent) => {
+    if (e.pointerType === 'touch') return
     leaveTimer.current = setTimeout(() => {
       setHoveredNode(null)
       leaveTimer.current = null
     }, 300)
   }, [])
+
+  // Click to pin (desktop + mobile tap). Touch long-press is handled by the
+  // container in CollectionView; suppressClickRef gates the click that follows.
   const handleNodeClick = useCallback((e: React.MouseEvent, node: HierarchyPointNode<TaxonTreeNode>) => {
+    if (suppressClickRef?.current) { suppressClickRef.current = false; return }
     e.stopPropagation()
+    setHoveredNode(null)
     setPinnedNode(prev => prev === node ? null : node)
-  }, [])
+  }, [suppressClickRef])
   const handleBackgroundClick = useCallback(() => {
     setPinnedNode(null)
   }, [])
@@ -234,13 +272,18 @@ export function RadialTree({
   // ── Render ────────────────────────────────────────────────────────────────
   if (!layoutRoot || count === 0) return null
 
-  const allNodes = layoutRoot.descendants()
-
   // Whether any highlight is active (tree node or ring card hovered).
   const hasHighlight = highlightedIds.size > 0
 
   // Rotation: ring rotates by idx * angleStep; tree follows.
   const rotationDeg = (-idx * angleStep * 180) / Math.PI
+
+  // Label node: hover (desktop) > peek (mobile touch) > pin.
+  // Card hover/peek shows only the ancestor path — no label or depth ring.
+  const labelNode = hoveredCardIndex !== null
+    ? null
+    : (hoveredNode ?? peekedNode ?? pinnedNode)
+  const labelVisible = labelNode && highlightedIds.has(nodeId(labelNode))
 
   return (<>
     <svg
@@ -256,11 +299,11 @@ export function RadialTree({
     >
       {/* Tree group: translate to ring centre, rotate with ring. No scale(). */}
       <g transform={`translate(${currentCenter[0]}, ${currentCenter[1]}) rotate(${rotationDeg})`}>
-        {/* Depth ring — outline circle at the hovered node's radius */}
-        {hoveredNode && (!hasHighlight || highlightedIds.has(nodeId(hoveredNode))) && (
+        {/* Depth ring — outline circle at the label node's radius */}
+        {labelVisible && (
           <circle
             cx={0} cy={0}
-            r={hoveredNode.y}
+            r={labelNode.y}
             fill="none"
             stroke={depthRingColor}
             strokeWidth={DEPTH_RING_STROKE}
@@ -281,13 +324,13 @@ export function RadialTree({
           return (
             <g
               key={id}
-              onMouseEnter={disabled ? undefined : () => handleNodeEnter(node)}
-              onMouseLeave={disabled ? undefined : handleNodeLeave}
+              onPointerEnter={disabled ? undefined : (e) => handlePointerEnter(e, node)}
+              onPointerLeave={disabled ? undefined : handlePointerLeave}
               onClick={disabled ? undefined : (e) => handleNodeClick(e, node)}
               style={{ cursor: disabled ? 'default' : 'pointer' }}
             >
-              {/* Invisible hit area */}
-              <circle cx={x} cy={y} r={HIT_RADIUS} fill="transparent" style={{ pointerEvents: disabled ? 'none' : 'all' }} />
+              {/* Invisible hit area — data-node-id for drag hit-testing */}
+              <circle cx={x} cy={y} r={HIT_RADIUS} fill="transparent" data-node-id={id} style={{ pointerEvents: disabled ? 'none' : 'all' }} />
               {/* Visible node */}
               <circle
                 cx={x}
@@ -304,15 +347,15 @@ export function RadialTree({
     </svg>
 
     {/* Label overlay — separate SVG above cards so it's never occluded */}
-    {hoveredNode && highlightedIds.has(nodeId(hoveredNode)) && (
+    {labelVisible && (
       <svg
         className="pointer-events-none absolute inset-0"
         width={containerSize}
         height={containerSize}
-        style={{ zIndex: 100 }} // above card z-indices (max ~count) and caption bar (z-50)
+        style={{ zIndex: 100 }}
       >
         <HoverLabel
-          node={hoveredNode}
+          node={labelNode}
           currentCenter={currentCenter}
           rotationDeg={rotationDeg}
           rankLabels={rankLabels}
@@ -373,7 +416,7 @@ function HoverLabel({
         textAnchor={anchor}
         className="pointer-events-none select-none fill-foreground text-sm font-semibold"
       >
-        {node.data.name}
+        {node.data.displayName || node.data.name}
       </text>
       <text
         x={textX}

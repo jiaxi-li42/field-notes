@@ -20,6 +20,12 @@ export type RecordingPayload = {
   taxonFamily: string
   taxonGenus: string
   taxonSpecies: string
+  taxonKingdomZh: string
+  taxonPhylumZh: string
+  taxonClassZh: string
+  taxonOrderZh: string
+  taxonFamilyZh: string
+  taxonGenusZh: string
   date: string
   locationPlaceName: string
   notes: string
@@ -38,6 +44,12 @@ export async function createRecording(payload: RecordingPayload): Promise<{ id: 
     payload.taxonFamily,
     payload.taxonGenus,
     payload.taxonSpecies,
+    payload.taxonKingdomZh,
+    payload.taxonPhylumZh,
+    payload.taxonClassZh,
+    payload.taxonOrderZh,
+    payload.taxonFamilyZh,
+    payload.taxonGenusZh,
   )
   const species = new Species(
     payload.speciesGbifKey,

@@ -83,6 +83,12 @@ export type Dictionary = {
     no_results: string
     searching: string
     save_error: string
+    auto_fill: string
+    auto_fill_hint: string
+    manual_entry: string
+    manual_entry_hint: string
+    common_name: string
+    scientific_name: string
   }
 }
 

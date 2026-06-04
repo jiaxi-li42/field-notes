@@ -1,7 +1,7 @@
 {
   "nav": {
     "collection": "Collection",
-    "new": "Log recording"
+    "new": "Record"
   },
   "kingdoms": {
     "Animalia": "Animalia",
@@ -13,7 +13,7 @@
   "recording": {
     "date": "Date",
     "location": "Location",
-    "notes": "notes",
+    "notes": "Notes",
     "species": "Species",
     "photos": "Photos"
   },
@@ -25,11 +25,11 @@
     "empty_filtered": "No recordings in this kingdom"
   },
   "header": {
-    "search": "search",
-    "add": "add",
-    "switch_view": "switch view",
-    "exit_fullscreen": "exit fullscreen",
-    "filter": "filter",
+    "search": "Search",
+    "add": "Add",
+    "switch_view": "Switch view",
+    "exit_fullscreen": "Exit fullscreen",
+    "filter": "Filter",
     "profile": "Profile",
     "settings": "Settings",
     "circle_unavailable": "Not Available",
@@ -50,10 +50,10 @@
     "species": "Species"
   },
   "detail": {
-    "taxonomy": "taxonomy",
-    "date_added": "date added",
-    "observed_location": "observed location",
-    "return": "return",
+    "taxonomy": "Taxonomy",
+    "date_added": "Date Added",
+    "observed_location": "Observed Location",
+    "return": "Return",
     "edit": "Edit",
     "delete_title": "Are you sure?",
     "delete_description": "This action cannot be undone. This will permanently delete this record.",
@@ -91,6 +91,12 @@
     "no_results": "No species found",
     "searching": "Searching…",
     "caption_placeholder": "Add a caption",
-    "save_error": "Failed to save. Please try again."
+    "save_error": "Failed to save. Please try again.",
+    "auto_fill": "Auto-fill",
+    "auto_fill_hint": "Taxonomy data from GBIF",
+    "manual_entry": "Manual",
+    "manual_entry_hint": "Enter taxonomy yourself",
+    "common_name": "Common name",
+    "scientific_name": "Scientific name"
   }
 }

@@ -12,11 +12,21 @@ import {
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
 
+export type TaxonZh = {
+  kingdom?: string
+  phylum?: string
+  class?: string
+  order?: string
+  family?: string
+  genus?: string
+}
+
 export interface GBIFSuggestion {
   key: number
   canonicalName: string
   vernacularName?: string
   vernacularNameZh?: string
+  taxonZh?: TaxonZh
   rank?: string
   kingdom?: string
   phylum?: string
@@ -103,18 +113,22 @@ export function TaxonomySearch({
     // Emit with GBIF data right away
     onSelect(item)
 
-    // Fetch zh vernacular name from iNaturalist in the background
+    // Fetch zh vernacular name + zh taxonomy from iNaturalist in the background
     try {
       const res = await fetch(
         `/api/taxonomy/resolve?name=${encodeURIComponent(item.canonicalName)}`,
       )
       if (res.ok) {
-        const { vernacularNameZh } = await res.json()
-        if (vernacularNameZh) {
-          onSelect({ ...item, vernacularNameZh })
+        const { vernacularNameZh, taxonZh } = await res.json()
+        if (vernacularNameZh || taxonZh) {
+          onSelect({
+            ...item,
+            ...(vernacularNameZh ? { vernacularNameZh } : {}),
+            ...(taxonZh ? { taxonZh } : {}),
+          })
         }
       }
-    } catch { /* non-critical — zh name is optional */ }
+    } catch { /* non-critical — zh data is optional */ }
   }
 
   return (

@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useRef, useState, useTransition } from 'react'
-import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { MdIcon } from '@/components/ui/MdIcon'
 import { Button, buttonVariants } from '@/components/ui/button'
@@ -30,6 +29,15 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
+import {
+  FieldGroup,
+  Field,
+  FieldContent,
+  FieldLabel,
+  FieldTitle,
+  FieldDescription,
+} from '@/components/ui/field'
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { TaxonomySearch, type GBIFSuggestion } from '@/components/taxonomy/TaxonomySearch'
 import { KingdomBadge } from '@/components/taxonomy/KingdomBadge'
 import { createRecording, deleteRecording } from '@/app/actions/recordings'
@@ -56,9 +64,19 @@ function readDimensions(src: string): Promise<{ width: number; height: number }>
   })
 }
 
+/* ------------------------------------------------------------------ */
+/*  FieldLabel style override — match detail page section labels       */
+/* ------------------------------------------------------------------ */
+
+const fieldLabelClass = 'text-xs font-bold text-muted-foreground lowercase'
+
+/* ------------------------------------------------------------------ */
+/*  RecordingForm                                                      */
+/* ------------------------------------------------------------------ */
+
 interface RecordingFormProps {
   lang: string
-  dict: Pick<Dictionary, 'nav' | 'recording' | 'actions' | 'form' | 'kingdoms'>
+  dict: Pick<Dictionary, 'nav' | 'recording' | 'actions' | 'form' | 'kingdoms' | 'detail' | 'ranks'>
 }
 
 export function RecordingForm({ lang, dict }: RecordingFormProps) {
@@ -67,15 +85,83 @@ export function RecordingForm({ lang, dict }: RecordingFormProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const [selectedSpecies, setSelectedSpecies] = useState<GBIFSuggestion | null>(null)
+  const [manualTaxonomy, setManualTaxonomy] = useState(false)
+  const [nameFields, setNameFields] = useState({ common: '', commonEn: '', scientific: '' })
+  const [taxonFields, setTaxonFields] = useState({
+    kingdom: '', phylum: '', class: '', order: '', family: '', genus: '', species: '',
+  })
+  const [taxonFieldsZh, setTaxonFieldsZh] = useState({
+    kingdom: '', phylum: '', class: '', order: '', family: '', genus: '',
+  })
   const [date, setDate] = useState<Date>(new Date())
-  const [calOpen, setCalOpen] = useState(false)
   const [location, setLocation] = useState('')
   const [notes, setNotes] = useState('')
   const [uploadedPhotos, setUploadedPhotos] = useState<UploadedPhoto[]>([])
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const collectionHref = lang === 'zh' ? '/zh' : '/'
+  // Sync auto-filled fields when species changes
+  useEffect(() => {
+    if (selectedSpecies && !manualTaxonomy) {
+      setNameFields({
+        common: (lang === 'zh'
+          ? selectedSpecies.vernacularNameZh
+          : selectedSpecies.vernacularName) ?? '',
+        commonEn: selectedSpecies.vernacularName ?? '',
+        scientific: selectedSpecies.canonicalName ?? '',
+      })
+      setTaxonFields({
+        kingdom: selectedSpecies.kingdom ?? '',
+        phylum: selectedSpecies.phylum ?? '',
+        class: selectedSpecies.class ?? '',
+        order: selectedSpecies.order ?? '',
+        family: selectedSpecies.family ?? '',
+        genus: selectedSpecies.genus ?? '',
+        species: selectedSpecies.species ?? '',
+      })
+      const zh = selectedSpecies.taxonZh
+      setTaxonFieldsZh({
+        kingdom: zh?.kingdom ?? '',
+        phylum: zh?.phylum ?? '',
+        class: zh?.class ?? '',
+        order: zh?.order ?? '',
+        family: zh?.family ?? '',
+        genus: zh?.genus ?? '',
+      })
+    }
+  }, [selectedSpecies, manualTaxonomy])
+
+  // When switching to auto-fill, reset to GBIF data
+  function selectAutoFill() {
+    setManualTaxonomy(false)
+    if (selectedSpecies) {
+      setNameFields({
+        common: (lang === 'zh'
+          ? selectedSpecies.vernacularNameZh
+          : selectedSpecies.vernacularName) ?? '',
+        commonEn: selectedSpecies.vernacularName ?? '',
+        scientific: selectedSpecies.canonicalName ?? '',
+      })
+      setTaxonFields({
+        kingdom: selectedSpecies.kingdom ?? '',
+        phylum: selectedSpecies.phylum ?? '',
+        class: selectedSpecies.class ?? '',
+        order: selectedSpecies.order ?? '',
+        family: selectedSpecies.family ?? '',
+        genus: selectedSpecies.genus ?? '',
+        species: selectedSpecies.species ?? '',
+      })
+      const zh = selectedSpecies.taxonZh
+      setTaxonFieldsZh({
+        kingdom: zh?.kingdom ?? '',
+        phylum: zh?.phylum ?? '',
+        class: zh?.class ?? '',
+        order: zh?.order ?? '',
+        family: zh?.family ?? '',
+        genus: zh?.genus ?? '',
+      })
+    }
+  }
 
   async function handleFiles(e: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(e.target.files ?? [])
@@ -138,24 +224,57 @@ export function RecordingForm({ lang, dict }: RecordingFormProps) {
 
     startTransition(async () => {
       try {
+        // In auto-fill mode, read taxonomy directly from selectedSpecies
+        // (taxonFields depends on useEffect and may not have synced yet).
+        const tx = manualTaxonomy ? taxonFields : {
+          kingdom: selectedSpecies.kingdom ?? '',
+          phylum: selectedSpecies.phylum ?? '',
+          class: selectedSpecies.class ?? '',
+          order: selectedSpecies.order ?? '',
+          family: selectedSpecies.family ?? '',
+          genus: selectedSpecies.genus ?? '',
+          species: selectedSpecies.species ?? '',
+        }
+        const txZh = lang === 'zh'
+          ? (manualTaxonomy ? taxonFieldsZh : {
+              kingdom: selectedSpecies.taxonZh?.kingdom ?? '',
+              phylum: selectedSpecies.taxonZh?.phylum ?? '',
+              class: selectedSpecies.taxonZh?.class ?? '',
+              order: selectedSpecies.taxonZh?.order ?? '',
+              family: selectedSpecies.taxonZh?.family ?? '',
+              genus: selectedSpecies.taxonZh?.genus ?? '',
+            })
+          : { kingdom: '', phylum: '', class: '', order: '', family: '', genus: '' }
         await createRecording({
           speciesGbifKey: selectedSpecies.key,
-          speciesCanonicalName: selectedSpecies.canonicalName,
-          speciesVernacularEn: selectedSpecies.vernacularName ?? '',
-          speciesVernacularZh: selectedSpecies.vernacularNameZh ?? '',
-          speciesKingdom: selectedSpecies.kingdom ?? 'Animalia',
-          taxonPhylum: selectedSpecies.phylum ?? '',
-          taxonClass: selectedSpecies.class ?? '',
-          taxonOrder: selectedSpecies.order ?? '',
-          taxonFamily: selectedSpecies.family ?? '',
-          taxonGenus: selectedSpecies.genus ?? '',
-          taxonSpecies: selectedSpecies.species ?? '',
+          speciesCanonicalName: manualTaxonomy
+            ? nameFields.scientific || `${tx.genus} ${tx.species}`.trim()
+            : selectedSpecies.canonicalName,
+          speciesVernacularEn: manualTaxonomy
+            ? (lang === 'zh' ? nameFields.commonEn : nameFields.common)
+            : (selectedSpecies.vernacularName ?? ''),
+          speciesVernacularZh: lang === 'zh'
+            ? (manualTaxonomy ? nameFields.common : (selectedSpecies.vernacularNameZh ?? ''))
+            : '',
+          speciesKingdom: tx.kingdom || (selectedSpecies.kingdom ?? 'Animalia'),
+          taxonPhylum: tx.phylum,
+          taxonClass: tx.class,
+          taxonOrder: tx.order,
+          taxonFamily: tx.family,
+          taxonGenus: tx.genus,
+          taxonSpecies: tx.species,
+          taxonKingdomZh: txZh.kingdom,
+          taxonPhylumZh: txZh.phylum,
+          taxonClassZh: txZh.class,
+          taxonOrderZh: txZh.order,
+          taxonFamilyZh: txZh.family,
+          taxonGenusZh: txZh.genus,
           date: date.toISOString(),
           locationPlaceName: location,
           notes,
           photos: uploadedPhotos.map((p) => ({ id: p.id, url: p.url, caption: p.caption, width: p.width, height: p.height })),
         })
-        router.push(collectionHref)
+        router.back()
       } catch {
         setError(dict.form.save_error)
       }
@@ -165,36 +284,40 @@ export function RecordingForm({ lang, dict }: RecordingFormProps) {
   return (
     <form onSubmit={handleSubmit} noValidate>
       {/* Header — fixed */}
-      <header className="fixed left-0 right-0 top-0 z-50 bg-white">
-        <div className="mx-auto flex max-w-sm md:max-w-2xl items-center justify-between p-4">
-          <Link
-            href={collectionHref}
-            className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }), 'px-2')}
-          >
-            {dict.actions.cancel}
-          </Link>
-          <Button
-            type="submit"
-            variant="ghost"
-            size="sm"
-            className="px-2"
-            disabled={!selectedSpecies || isPending || uploading}
-          >
-            {isPending ? '…' : dict.actions.save}
-          </Button>
+      <header className="fixed left-0 right-0 top-0 z-50">
+        <div className="mx-auto flex max-w-sm md:max-w-2xl items-center justify-between px-4 py-6">
+          {/* Left — title */}
+          <h1 className="text-2xl tracking-tight">{dict.nav.new}</h1>
+
+          {/* Right — cancel + save */}
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={() => router.back()}
+              className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }), 'px-2 lowercase')}
+            >
+              {dict.actions.cancel}
+            </button>
+            <Button
+              type="submit"
+              variant="ghost"
+              size="sm"
+              className="px-2 lowercase"
+              disabled={!selectedSpecies || isPending || uploading}
+            >
+              {isPending ? '…' : dict.actions.save}
+            </Button>
+          </div>
         </div>
       </header>
 
       {/* Content */}
-      <div className="mx-auto max-w-sm md:max-w-2xl px-4 pt-16">
-        {/* Title */}
-        <h1 className="pb-12 text-2xl tracking-tight">{dict.nav.new}</h1>
+      <div className="mx-auto max-w-sm md:max-w-2xl px-4 pt-20">
+        <FieldGroup className="divide-y divide-border gap-0">
 
-        {/* Sections */}
-        <div className="divide-y divide-border">
           {/* Species */}
-          <div className="space-y-2 py-4">
-            <label className="text-xs font-bold text-muted-foreground">{dict.recording.species}</label>
+          <Field className="py-4">
+            <FieldLabel className={fieldLabelClass}>{dict.recording.species}</FieldLabel>
             <TaxonomySearch
               placeholder={dict.form.species_placeholder}
               noResults={dict.form.no_results}
@@ -203,7 +326,7 @@ export function RecordingForm({ lang, dict }: RecordingFormProps) {
               onClear={() => setSelectedSpecies(null)}
             />
             {selectedSpecies?.kingdom && (
-              <div className="flex items-center gap-2 pt-1">
+              <div className="flex items-center gap-2">
                 <KingdomBadge
                   kingdom={selectedSpecies.kingdom as Kingdom}
                   label={dict.kingdoms[selectedSpecies.kingdom] ?? selectedSpecies.kingdom}
@@ -213,17 +336,105 @@ export function RecordingForm({ lang, dict }: RecordingFormProps) {
                 </span>
               </div>
             )}
-          </div>
 
-          {/* Date */}
-          <div className="space-y-2 py-4">
-            <label className="text-xs font-bold text-muted-foreground">{dict.recording.date}</label>
-            <Popover open={calOpen} onOpenChange={setCalOpen}>
-              <PopoverTrigger
-                className={cn(
-                  buttonVariants({ variant: 'outline' }),
-                  'w-full justify-start font-normal font-sans-ui',
+            {/* Choice Card — auto-fill vs manual */}
+            {selectedSpecies && (
+              <RadioGroup
+                value={manualTaxonomy ? 'manual' : 'auto'}
+                onValueChange={(v) => {
+                  if (v === 'auto') selectAutoFill()
+                  else setManualTaxonomy(true)
+                }}
+              >
+                <FieldLabel htmlFor="auto-fill">
+                  <Field orientation="horizontal">
+                    <FieldContent>
+                      <FieldTitle className="font-sans-ui">{dict.form.auto_fill}</FieldTitle>
+                      <FieldDescription className="font-sans-ui">{dict.form.auto_fill_hint}</FieldDescription>
+                    </FieldContent>
+                    <RadioGroupItem value="auto" id="auto-fill" />
+                  </Field>
+                </FieldLabel>
+                <FieldLabel htmlFor="manual-entry">
+                  <Field orientation="horizontal">
+                    <FieldContent>
+                      <FieldTitle className="font-sans-ui">{dict.form.manual_entry}</FieldTitle>
+                      <FieldDescription className="font-sans-ui">{dict.form.manual_entry_hint}</FieldDescription>
+                    </FieldContent>
+                    <RadioGroupItem value="manual" id="manual-entry" />
+                  </Field>
+                </FieldLabel>
+              </RadioGroup>
+            )}
+
+            {/* Manual taxonomy inputs */}
+            {selectedSpecies && manualTaxonomy && (
+              <div className="flex flex-col gap-2 pt-1">
+                <div className="flex items-center gap-3">
+                  <span className="w-16 shrink-0 text-xs text-muted-foreground font-sans-ui">{dict.form.common_name}</span>
+                  <Input
+                    value={nameFields.common}
+                    onChange={(e) => setNameFields((prev) => ({ ...prev, common: e.target.value }))}
+                    className="h-8 text-sm font-sans-ui"
+                  />
+                </div>
+                {lang === 'zh' && (
+                  <div className="flex items-center gap-3">
+                    <span className="w-16 shrink-0 text-xs text-muted-foreground font-sans-ui">俗名（英文）</span>
+                    <Input
+                      value={nameFields.commonEn}
+                      onChange={(e) => setNameFields((prev) => ({ ...prev, commonEn: e.target.value }))}
+                      className="h-8 text-sm font-sans-ui"
+                    />
+                  </div>
                 )}
+                <div className="flex items-center gap-3">
+                  <span className="w-16 shrink-0 text-xs text-muted-foreground font-sans-ui">{dict.form.scientific_name}</span>
+                  <Input
+                    value={nameFields.scientific}
+                    onChange={(e) => setNameFields((prev) => ({ ...prev, scientific: e.target.value }))}
+                    className="h-8 text-sm font-sans-ui italic"
+                  />
+                </div>
+                {(['kingdom', 'phylum', 'class', 'order', 'family', 'genus', 'species'] as const).map((rank) => (
+                  <div key={rank} className="flex items-center gap-3">
+                    <span className="w-16 shrink-0 text-xs text-muted-foreground font-sans-ui">{dict.ranks[rank]}</span>
+                    {lang === 'zh' && rank !== 'species' && (
+                      <Input
+                        value={taxonFieldsZh[rank]}
+                        onChange={(e) => setTaxonFieldsZh((prev) => ({ ...prev, [rank]: e.target.value }))}
+                        className="h-8 text-sm font-sans-ui"
+                      />
+                    )}
+                    <Input
+                      value={taxonFields[rank]}
+                      onChange={(e) => setTaxonFields((prev) => ({ ...prev, [rank]: e.target.value }))}
+                      className="h-8 text-sm font-sans-ui italic"
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
+          </Field>
+
+          {/* Notes */}
+          <Field className="py-4">
+            <FieldLabel className={fieldLabelClass}>{dict.recording.notes}</FieldLabel>
+            <Textarea
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder={dict.form.notes_placeholder}
+              className="font-sans-ui"
+              rows={4}
+            />
+          </Field>
+
+          {/* Date Added */}
+          <Field className="py-4">
+            <FieldLabel className={fieldLabelClass}>{dict.detail.date_added}</FieldLabel>
+            <Popover>
+              <PopoverTrigger
+                className={cn(buttonVariants({ variant: 'outline' }), 'w-full justify-start font-normal font-sans-ui')}
               >
                 <MdIcon name="calendar_today" className="mr-2" />
                 {formatDate(date, lang)}
@@ -232,33 +443,28 @@ export function RecordingForm({ lang, dict }: RecordingFormProps) {
                 <Calendar
                   mode="single"
                   selected={date}
-                  onSelect={(d) => {
-                    if (d) {
-                      setDate(d)
-                      setCalOpen(false)
-                    }
-                  }}
+                  onSelect={(d) => { if (d) setDate(d) }}
                   disabled={(d) => d > new Date()}
                 />
               </PopoverContent>
             </Popover>
-          </div>
+          </Field>
 
-          {/* Location */}
-          <div className="space-y-2 py-4">
-            <label className="text-xs font-bold text-muted-foreground">{dict.recording.location}</label>
+          {/* Observed Location */}
+          <Field className="py-4">
+            <FieldLabel className={fieldLabelClass}>{dict.detail.observed_location}</FieldLabel>
             <Input
               value={location}
               onChange={(e) => setLocation(e.target.value)}
               placeholder={dict.form.location_placeholder}
               className="font-sans-ui"
             />
-          </div>
+          </Field>
 
           {/* Photos */}
-          <div className="space-y-2 py-4">
+          <Field className="py-4">
             <div className="flex items-center justify-between">
-              <label className="text-xs font-bold text-muted-foreground">{dict.recording.photos}</label>
+              <FieldLabel className={fieldLabelClass}>{dict.recording.photos}</FieldLabel>
               <span className="text-xs text-muted-foreground">{dict.form.photos_hint}</span>
             </div>
             <input
@@ -311,20 +517,9 @@ export function RecordingForm({ lang, dict }: RecordingFormProps) {
                 ))}
               </div>
             )}
-          </div>
+          </Field>
 
-          {/* Notes */}
-          <div className="space-y-2 py-4">
-            <label className="text-xs font-bold text-muted-foreground">{dict.recording.notes}</label>
-            <Textarea
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder={dict.form.notes_placeholder}
-              className="font-sans-ui"
-              rows={4}
-            />
-          </div>
-        </div>
+        </FieldGroup>
 
         {error && <p className="text-sm text-destructive pt-4">{error}</p>}
       </div>
@@ -339,7 +534,6 @@ export function RecordingForm({ lang, dict }: RecordingFormProps) {
 interface DetailActionsProps {
   recordingId: string
   editHref: string
-  redirectTo: string
   labels: {
     edit: string
     delete: string
@@ -354,7 +548,6 @@ interface DetailActionsProps {
 export function DetailActions({
   recordingId,
   editHref,
-  redirectTo,
   labels,
 }: DetailActionsProps) {
   const router = useRouter()
@@ -364,7 +557,7 @@ export function DetailActions({
   function handleDelete() {
     startTransition(async () => {
       await deleteRecording(recordingId)
-      router.push(redirectTo)
+      router.back()
     })
   }
 

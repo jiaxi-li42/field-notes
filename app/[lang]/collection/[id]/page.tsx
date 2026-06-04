@@ -13,7 +13,7 @@ import { buildTaxonRows } from '@/lib/utils/taxonomy'
 function Section({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="py-4 md:grid md:grid-cols-3">
-      <dt className="mb-2 md:mb-0 text-xs text-muted-foreground font-bold">{label}</dt>
+      <dt className="mb-2 md:mb-0 text-xs text-muted-foreground font-bold lowercase">{label}</dt>
       <dd className="text-sm font-sans-ui md:col-span-2">{children}</dd>
     </div>
   )
@@ -35,10 +35,13 @@ export default async function RecordingDetailPage({
 
   const { species, date, location, notes, photos } = recording
   const base = langPrefix(lang) || '/'
-  const vernacular = lang === 'zh' ? species.vernacularNameZh : species.vernacularNameEn
+  const hasZhName = lang === 'zh' && !!species.vernacularNameZh
+  const vernacular = lang === 'zh'
+    ? species.vernacularNameZh || species.vernacularNameEn
+    : species.vernacularNameEn
   const displayName = vernacular || species.canonicalName
 
-  const taxonRows = buildTaxonRows(species.taxon, dict.ranks)
+  const taxonRows = buildTaxonRows(species.taxon, dict.ranks, lang)
 
   return (
     <main className="min-h-screen bg-white">
@@ -47,12 +50,11 @@ export default async function RecordingDetailPage({
         <div className="mx-auto flex max-w-sm md:max-w-2xl items-center justify-between p-4">
           <BackButton
             label={dict.detail.return}
-            className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }), 'px-2')}
+            className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }), 'px-2 lowercase')}
           />
           <DetailActions
           recordingId={id}
           editHref={`${base === '/' ? '' : base}/collection/${id}/edit`}
-          redirectTo={base}
           labels={{
             edit: dict.detail.edit,
             delete: dict.actions.delete,
@@ -80,8 +82,8 @@ export default async function RecordingDetailPage({
         {/* Species name + canonical name */}
         <div className="pb-4 gap-1 flex flex-col">
           <h1 className="text-2xl tracking-tight">{displayName}</h1>
-          {lang === 'zh' && vernacular && species.vernacularNameEn ? (
-            <p className="text-sm font-sans-ui">{species.vernacularNameEn}</p>
+          {hasZhName && species.vernacularNameEn ? (
+            <p className="text-sm font-bold font-sans-ui">{species.vernacularNameEn}</p>
           ) : (
             vernacular && species.canonicalName !== displayName && (
               <p className="text-sm font-sans-ui italic">{species.canonicalName}</p>
@@ -92,17 +94,11 @@ export default async function RecordingDetailPage({
         {/* Sections */}
         <dl className="divide-y divide-border">
           <Section label={dict.detail.taxonomy}>
-            {taxonRows.map(([label, value]) => (
+            {taxonRows.map(([label, value, italic]) => (
               <p key={label}>
                 <span>{label}</span>
                 <span className="text-muted-foreground"> · </span>
-                <span
-                  className={
-                    label === dict.ranks.genus || label === dict.ranks.species
-                      ? 'italic'
-                      : ''
-                  }
-                >
+                <span className={italic ? 'italic' : ''}>
                   {value}
                 </span>
               </p>

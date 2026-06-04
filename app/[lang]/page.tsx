@@ -45,8 +45,8 @@ export default async function HomePage({
   // Sort recordings based on selected sort option
   const recordings = [...all].sort((a, b) => {
     if (activeSort === 'name') {
-      const nameA = (lang === 'zh' ? a.species.vernacularNameZh : a.species.vernacularNameEn) || a.species.canonicalName
-      const nameB = (lang === 'zh' ? b.species.vernacularNameZh : b.species.vernacularNameEn) || b.species.canonicalName
+      const nameA = (lang === 'zh' ? a.species.vernacularNameZh || a.species.vernacularNameEn : a.species.vernacularNameEn) || a.species.canonicalName
+      const nameB = (lang === 'zh' ? b.species.vernacularNameZh || b.species.vernacularNameEn : b.species.vernacularNameEn) || b.species.canonicalName
       return nameA.localeCompare(nameB)
     }
     if (activeSort === 'date') {
@@ -83,10 +83,12 @@ export default async function HomePage({
     id: r.id,
     photoUrl: r.photos[0]?.url,
     displayName:
-      (lang === 'zh' ? r.species.vernacularNameZh : r.species.vernacularNameEn) ||
+      (lang === 'zh'
+        ? r.species.vernacularNameZh || r.species.vernacularNameEn
+        : r.species.vernacularNameEn) ||
       r.species.canonicalName,
     href: `${basePath}/collection/${r.id}`,
-    // Taxonomy for tree visualisation
+    // Taxonomy for tree visualisation (English — grouping key)
     kingdom: r.species.kingdom,
     phylum: r.species.taxon.phylum,
     taxonomyClass: r.species.taxon.taxonomyClass,
@@ -94,6 +96,15 @@ export default async function HomePage({
     family: r.species.taxon.family,
     genus: r.species.taxon.genus,
     species: r.species.taxon.species,
+    // zh taxonomy display names
+    ...(lang === 'zh' ? {
+      kingdomZh: r.species.taxon.kingdomZh || undefined,
+      phylumZh: r.species.taxon.phylumZh || undefined,
+      taxonomyClassZh: r.species.taxon.taxonomyClassZh || undefined,
+      orderZh: r.species.taxon.orderZh || undefined,
+      familyZh: r.species.taxon.familyZh || undefined,
+      genusZh: r.species.taxon.genusZh || undefined,
+    } : {}),
   }))
 
   return (

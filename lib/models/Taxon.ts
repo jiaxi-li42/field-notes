@@ -7,5 +7,11 @@ export class Taxon {
     public readonly family: string,
     public readonly genus: string,
     public readonly species: string,
+    public readonly kingdomZh: string = '',
+    public readonly phylumZh: string = '',
+    public readonly taxonomyClassZh: string = '',
+    public readonly orderZh: string = '',
+    public readonly familyZh: string = '',
+    public readonly genusZh: string = '',
   ) {}
 }

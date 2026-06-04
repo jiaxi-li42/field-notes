@@ -5,6 +5,8 @@ import type { Kingdom } from '@/lib/models/Species'
 export interface TaxonTreeNode {
   /** Rank value, e.g. "Chordata", "Aves", or species canonical name for leaves. */
   name: string
+  /** Locale-aware display name (e.g. zh name). Falls back to `name` when absent. */
+  displayName?: string
   /** Taxonomy rank label. */
   rank: 'root' | 'kingdom' | 'phylum' | 'class' | 'order' | 'family' | 'genus' | 'species'
   /** Kingdom this node belongs to (set at phylum-level and below). */
@@ -34,6 +36,15 @@ export function buildTaxonTree(cards: CircleCardData[]): TaxonTreeNode {
     family: 'family',
     genus: 'genus',
   }
+  // Map from card field name → zh field name
+  const zhFields: Record<string, keyof CircleCardData> = {
+    kingdom: 'kingdomZh',
+    phylum: 'phylumZh',
+    taxonomyClass: 'taxonomyClassZh',
+    order: 'orderZh',
+    family: 'familyZh',
+    genus: 'genusZh',
+  }
 
   for (let i = 0; i < cards.length; i++) {
     const card = cards[i]
@@ -42,15 +53,20 @@ export function buildTaxonTree(cards: CircleCardData[]): TaxonTreeNode {
     // Walk down the rank path, creating intermediate nodes as needed
     for (const field of ranks) {
       const value = card[field]
+      const zhValue = card[zhFields[field]] as string | undefined
       let child = parent.children?.find(c => c.name === value && c.rank === rankLabels[field])
       if (!child) {
         child = {
           name: value,
+          displayName: zhValue || undefined,
           rank: rankLabels[field],
           kingdom: card.kingdom,
           children: [],
         }
         parent.children!.push(child)
+      } else if (!child.displayName && zhValue) {
+        // Update displayName from a later card that has zh data
+        child.displayName = zhValue
       }
       parent = child
     }

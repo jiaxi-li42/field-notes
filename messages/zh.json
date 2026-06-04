@@ -91,6 +91,12 @@
     "no_results": "未找到物种",
     "searching": "搜索中…",
     "caption_placeholder": "添加说明",
-    "save_error": "保存失败，请重试。"
+    "save_error": "保存失败，请重试。",
+    "auto_fill": "自动填充",
+    "auto_fill_hint": "使用GBIF分类数据",
+    "manual_entry": "手动输入",
+    "manual_entry_hint": "自行填写分类信息",
+    "common_name": "俗名",
+    "scientific_name": "学名"
   }
 }
