@@ -49,6 +49,7 @@ export function DetailActions({
   editHref,
   labels,
 }: DetailActionsProps) {
+  const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [alertOpen, setAlertOpen] = useState(false)
 
@@ -72,7 +73,7 @@ export function DetailActions({
           <MdIcon name="more_horiz" />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" sideOffset={6} className="bg-neutral-100 font-sans-ui shadow-none ring-0">
-          <DropdownMenuItem disabled>
+          <DropdownMenuItem onClick={() => router.push(editHref)} className="focus:bg-neutral-200">
             {labels.edit}
           </DropdownMenuItem>
           <DropdownMenuSeparator />

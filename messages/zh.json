@@ -1,7 +1,8 @@
 {
   "nav": {
     "collection": "Collection",
-    "new": "Record"
+    "new": "Record",
+    "edit": "Edit"
   },
   "kingdoms": {
     "Animalia": "动物界",

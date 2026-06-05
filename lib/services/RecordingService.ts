@@ -168,6 +168,73 @@ export class RecordingService {
     )
   }
 
+  static async update(userId: string, id: string, input: CreateRecordingInput): Promise<void> {
+    const [row] = await db
+      .select({ userId: recordings.userId })
+      .from(recordings)
+      .where(eq(recordings.id, id))
+      .limit(1)
+
+    if (!row || row.userId !== userId) return
+
+    // Update recording fields
+    await db.update(recordings).set({
+      speciesGbifKey: input.species.gbifKey,
+      speciesCanonicalName: input.species.canonicalName,
+      speciesVernacularNameEn: input.species.vernacularNameEn,
+      speciesVernacularNameZh: input.species.vernacularNameZh,
+      speciesKingdom: input.species.kingdom,
+      taxonKingdom: input.species.taxon.kingdom,
+      taxonPhylum: input.species.taxon.phylum,
+      taxonClass: input.species.taxon.taxonomyClass,
+      taxonOrder: input.species.taxon.order,
+      taxonFamily: input.species.taxon.family,
+      taxonGenus: input.species.taxon.genus,
+      taxonSpecies: input.species.taxon.species,
+      taxonKingdomZh: input.species.taxon.kingdomZh,
+      taxonPhylumZh: input.species.taxon.phylumZh,
+      taxonClassZh: input.species.taxon.taxonomyClassZh,
+      taxonOrderZh: input.species.taxon.orderZh,
+      taxonFamilyZh: input.species.taxon.familyZh,
+      taxonGenusZh: input.species.taxon.genusZh,
+      date: input.date.toISOString(),
+      locationPlaceName: input.location.placeName,
+      locationLat: input.location.lat ?? null,
+      locationLng: input.location.lng ?? null,
+      notes: input.notes,
+    }).where(eq(recordings.id, id))
+
+    // Replace photos: find removed ones, delete from R2, then replace rows
+    const oldPhotos = await db
+      .select({ id: photos.id, url: photos.url })
+      .from(photos)
+      .where(eq(photos.recordingId, id))
+
+    const newPhotoIds = new Set(input.photos.map((p) => p.id))
+    const removedPhotos = oldPhotos.filter((p) => !newPhotoIds.has(p.id))
+
+    await db.delete(photos).where(eq(photos.recordingId, id))
+
+    if (input.photos.length > 0) {
+      await db.insert(photos).values(
+        input.photos.map((p, i) => ({
+          id: p.id,
+          recordingId: id,
+          url: p.url,
+          caption: p.caption,
+          width: p.width,
+          height: p.height,
+          sortOrder: i,
+        })),
+      )
+    }
+
+    // Delete removed photos from R2 in background (non-blocking)
+    if (removedPhotos.length > 0) {
+      Promise.allSettled(removedPhotos.map((p) => StorageService.deletePhoto(p.url)))
+    }
+  }
+
   static async delete(userId: string, id: string): Promise<void> {
     const [row] = await db
       .select({ userId: recordings.userId })

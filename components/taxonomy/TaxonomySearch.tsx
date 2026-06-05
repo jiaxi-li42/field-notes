@@ -49,6 +49,8 @@ interface TaxonomySearchProps {
   changeLabel: string
   onSelect: (suggestion: GBIFSuggestion) => void
   onClear: () => void
+  initialSelected?: GBIFSuggestion | null
+  showReset?: boolean
 }
 
 export function TaxonomySearch({
@@ -59,12 +61,14 @@ export function TaxonomySearch({
   changeLabel,
   onSelect,
   onClear,
+  initialSelected = null,
+  showReset = true,
 }: TaxonomySearchProps) {
   const [search, setSearch] = useState('')
   const [results, setResults] = useState<GBIFSuggestion[]>([])
   const [loading, setLoading] = useState(false)
   const [open, setOpen] = useState(false)
-  const [selectedItem, setSelectedItem] = useState<GBIFSuggestion | null>(null)
+  const [selectedItem, setSelectedItem] = useState<GBIFSuggestion | null>(initialSelected)
 
   // ── Search via GBIF ───────────────────────────────────────────────────────
   useEffect(() => {
@@ -141,9 +145,11 @@ export function TaxonomySearch({
               )}
             </div>
           </ButtonGroupText>
-          <Button type="button" variant="outline" onClick={handleReset} className="h-auto hover:bg-accent font-sans-ui">
-            {changeLabel}
-          </Button>
+          {showReset && (
+            <Button type="button" variant="outline" onClick={handleReset} className="h-auto hover:bg-accent font-sans-ui">
+              {changeLabel}
+            </Button>
+          )}
         </ButtonGroup>
       ) : (
         <InputGroup onClick={() => setOpen(true)} className="cursor-pointer">

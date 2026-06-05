@@ -3,7 +3,7 @@ import 'server-only'
 export type Locale = 'en' | 'zh'
 
 export type Dictionary = {
-  nav: { collection: string; new: string }
+  nav: { collection: string; new: string; edit: string }
   kingdoms: Record<string, string>
   recording: {
     date: string
