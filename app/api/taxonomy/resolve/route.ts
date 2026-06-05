@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { auth } from '@/lib/auth'
 
 const INAT_SEARCH = 'https://api.inaturalist.org/v1/taxa'
 
@@ -16,6 +17,9 @@ const TARGET_RANKS = ['kingdom', 'phylum', 'class', 'order', 'family', 'genus'] 
  * GET /api/taxonomy/resolve?name=Quercus+robur
  */
 export async function GET(request: NextRequest) {
+  const session = await auth()
+  if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
   const name = request.nextUrl.searchParams.get('name')?.trim()
   if (!name) return NextResponse.json({ vernacularNameZh: '', taxonZh: null })
 

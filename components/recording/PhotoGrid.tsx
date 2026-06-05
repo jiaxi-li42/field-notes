@@ -13,6 +13,7 @@ import {
   TooltipContent,
 } from '@/components/ui/tooltip'
 import { MdIcon } from '@/components/ui/MdIcon'
+import { PHOTO_ROTATIONS } from '@/lib/utils/photo'
 
 interface PhotoItem {
   id: string
@@ -124,8 +125,6 @@ export function PhotoCarousel({ photos }: PhotoProps) {
 /*  PhotoGrid — desktop orientation-aware grid with tilts              */
 /* ------------------------------------------------------------------ */
 
-const ROTATIONS = [-0.8, 0.6, -0.5, 1.0, -0.3, 0.7, -0.9, 0.4, -0.6, 0.8]
-
 export function PhotoGrid({ photos }: PhotoProps) {
   if (photos.length === 0) return null
 
@@ -135,7 +134,7 @@ export function PhotoGrid({ photos }: PhotoProps) {
         const ratio = photo.width && photo.height ? photo.width / photo.height : 1
         const landscape = ratio > 1.1
         const square = !landscape && ratio >= 0.9
-        const rotate = ROTATIONS[i % ROTATIONS.length]
+        const rotate = PHOTO_ROTATIONS[i % PHOTO_ROTATIONS.length]
         return (
           <figure
             key={photo.id}

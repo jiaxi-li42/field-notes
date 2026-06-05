@@ -103,6 +103,7 @@
     "manual_entry": "Edit manually",
     "manual_entry_hint": "Review or correct the taxonomy fields",
     "common_name": "Common name",
+    "common_name_en": "Common name (English)",
     "scientific_name": "Scientific name",
     "change": "Reset"
   }

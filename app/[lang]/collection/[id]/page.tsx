@@ -39,9 +39,12 @@ export default async function RecordingDetailPage({
   const vernacular = lang === 'zh'
     ? species.vernacularNameZh || species.vernacularNameEn
     : species.vernacularNameEn
-  const displayName = vernacular || species.canonicalName
+  const displayName = species.displayName(lang)
 
   const taxonRows = buildTaxonRows(species.taxon, dict.ranks, lang)
+
+  // Serialize Photo class instances to plain objects for the client boundary
+  const photoData = photos.map((p) => ({ id: p.id, url: p.url, caption: p.caption, width: p.width, height: p.height }))
 
   return (
     <main className="min-h-screen bg-white">
@@ -71,15 +74,13 @@ export default async function RecordingDetailPage({
 
       {/* Mobile carousel — full width, at top */}
       {photos.length > 0 && (
-        <div className="md:hidden pt-14">
-          <PhotoCarousel
-            photos={photos.map((p) => ({ id: p.id, url: p.url, caption: p.caption, width: p.width, height: p.height }))}
-          />
+        <div className="md:hidden pt-15">
+          <PhotoCarousel photos={photoData} />
         </div>
       )}
 
       {/* Content */}
-      <div className="mx-auto max-w-sm md:max-w-2xl px-4 pt-8 pb-4 md:pt-16 pb-8">
+      <div className={cn("mx-auto max-w-sm md:max-w-2xl px-4 md:pt-16 pb-8", photos.length > 0 ? "pt-8" : "pt-15")}>
         {/* Species name + canonical name */}
         <div className="pb-4 gap-1 flex flex-col">
           <h1 className="text-2xl tracking-tight">{displayName}</h1>
@@ -126,9 +127,7 @@ export default async function RecordingDetailPage({
         {/* Desktop photos — at bottom */}
         {photos.length > 0 && (
           <div className="hidden md:block pt-12">
-            <PhotoGrid
-              photos={photos.map((p) => ({ id: p.id, url: p.url, caption: p.caption, width: p.width, height: p.height }))}
-            />
+            <PhotoGrid photos={photoData} />
           </div>
         )}
       </div>

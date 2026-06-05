@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { auth } from '@/lib/auth'
 
 // GBIF Backbone Taxonomy dataset key
 const BACKBONE = 'd7dddbf4-2cf0-4f39-9b2a-bb099caae36c'
@@ -76,6 +77,9 @@ function deduplicate(results: GBIFResult[]): GBIFResult[] {
 // ── Route handler ───────────────────────────────────────────────────────────
 
 export async function GET(request: NextRequest) {
+  const session = await auth()
+  if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
   const raw = request.nextUrl.searchParams.get('q')?.trim()
   if (!raw || raw.length < 2) return NextResponse.json([])
   const q = raw.toLowerCase()

@@ -103,6 +103,7 @@
     "manual_entry": "手动编辑",
     "manual_entry_hint": "检查或修正分类信息",
     "common_name": "俗名",
+    "common_name_en": "俗名（英文）",
     "scientific_name": "学名",
     "change": "重置"
   }

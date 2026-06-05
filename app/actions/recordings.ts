@@ -33,10 +33,7 @@ export type RecordingPayload = {
   photos: { id: string; url: string; caption: string; width: number; height: number }[]
 }
 
-export async function createRecording(payload: RecordingPayload): Promise<void> {
-  const session = await auth()
-  if (!session?.user?.id) throw new Error('Unauthorized')
-
+function toInput(payload: RecordingPayload) {
   const taxon = new Taxon(
     payload.speciesKingdom,
     payload.taxonPhylum,
@@ -60,52 +57,26 @@ export async function createRecording(payload: RecordingPayload): Promise<void> 
     taxon,
     payload.speciesKingdom as Kingdom,
   )
-  const location = new Location(payload.locationPlaceName)
-  await RecordingService.create(session.user.id, {
+  return {
     species,
     date: new Date(payload.date),
-    location,
+    location: new Location(payload.locationPlaceName),
     photos: payload.photos,
     notes: payload.notes,
-  })
+  }
+}
+
+export async function createRecording(payload: RecordingPayload): Promise<void> {
+  const session = await auth()
+  if (!session?.user?.id) throw new Error('Unauthorized')
+  await RecordingService.create(session.user.id, toInput(payload))
   revalidatePath('/')
 }
 
 export async function updateRecording(id: string, payload: RecordingPayload): Promise<void> {
   const session = await auth()
   if (!session?.user?.id) throw new Error('Unauthorized')
-
-  const taxon = new Taxon(
-    payload.speciesKingdom,
-    payload.taxonPhylum,
-    payload.taxonClass,
-    payload.taxonOrder,
-    payload.taxonFamily,
-    payload.taxonGenus,
-    payload.taxonSpecies,
-    payload.taxonKingdomZh,
-    payload.taxonPhylumZh,
-    payload.taxonClassZh,
-    payload.taxonOrderZh,
-    payload.taxonFamilyZh,
-    payload.taxonGenusZh,
-  )
-  const species = new Species(
-    payload.speciesGbifKey,
-    payload.speciesCanonicalName,
-    payload.speciesVernacularEn,
-    payload.speciesVernacularZh,
-    taxon,
-    payload.speciesKingdom as Kingdom,
-  )
-  const location = new Location(payload.locationPlaceName)
-  await RecordingService.update(session.user.id, id, {
-    species,
-    date: new Date(payload.date),
-    location,
-    photos: payload.photos,
-    notes: payload.notes,
-  })
+  await RecordingService.update(session.user.id, id, toInput(payload))
   revalidatePath('/')
 }
 

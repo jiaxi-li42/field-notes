@@ -11,4 +11,12 @@ export class Species {
     public readonly taxon: Taxon,
     public readonly kingdom: Kingdom,
   ) {}
+
+  /** Locale-aware display name: zh vernacular → en vernacular → scientific. */
+  displayName(lang: string): string {
+    const vernacular = lang === 'zh'
+      ? this.vernacularNameZh || this.vernacularNameEn
+      : this.vernacularNameEn
+    return vernacular || this.canonicalName
+  }
 }

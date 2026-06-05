@@ -27,6 +27,7 @@ import { cn } from '@/lib/utils'
 import { langPrefix } from '@/lib/utils/i18n'
 import type { Kingdom } from '@/lib/models/Species'
 import type { Dictionary } from '@/lib/i18n/dictionaries'
+import { PHOTO_ROTATIONS } from '@/lib/utils/photo'
 
 interface UploadedPhoto {
   id: string
@@ -51,14 +52,13 @@ function readDimensions(src: string): Promise<{ width: number; height: number }>
 /* ------------------------------------------------------------------ */
 
 const fieldLabelClass = 'text-xs font-bold text-muted-foreground lowercase'
-const fieldInputClass = 'h-8 text-sm font-sans-ui'
-const ROTATIONS = [-0.8, 0.6, -0.5, 1.0, -0.3, 0.7, -0.9, 0.4, -0.6, 0.8]
+const fieldInputClass = 'h-8 text-sm'
 
 function FormSection({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="py-4 md:grid md:grid-cols-3">
       <span className={cn(fieldLabelClass, 'block mb-2 md:mb-0')}>{label}</span>
-      <div className="flex flex-col gap-2 md:col-span-2">{children}</div>
+      <div className="flex flex-col gap-2 md:col-span-2 font-sans-ui">{children}</div>
     </div>
   )
 }
@@ -66,7 +66,7 @@ function FormSection({ label, children }: { label: string; children: React.React
 function LabeledField({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex flex-col gap-1 md:flex-row md:items-center md:gap-0">
-      <span className="md:w-28 shrink-0 text-sm text-muted-foreground font-sans-ui">{label}</span>
+      <span className="md:w-28 shrink-0 text-sm text-muted-foreground">{label}</span>
       <div className="flex items-center gap-2 flex-1">{children}</div>
     </div>
   )
@@ -90,7 +90,7 @@ export interface RecordingInitialData {
 
 interface RecordingFormProps {
   lang: string
-  dict: Pick<Dictionary, 'nav' | 'recording' | 'actions' | 'form' | 'kingdoms' | 'detail' | 'ranks'>
+  dict: Pick<Dictionary, 'nav' | 'recording' | 'actions' | 'form' | 'kingdoms' | 'detail' | 'ranks' | 'header'>
   initialData?: RecordingInitialData
 }
 
@@ -117,69 +117,38 @@ export function RecordingForm({ lang, dict, initialData }: RecordingFormProps) {
   const [calendarOpen, setCalendarOpen] = useState(false)
   const [captionPopoverIndex, setCaptionPopoverIndex] = useState<number | null>(null)
   const [captionDraft, setCaptionDraft] = useState('')
+  const [activePhotoIndex, setActivePhotoIndex] = useState<number | null>(null)
   const [error, setError] = useState<string | null>(null)
+
+  /** Populate name + taxon fields from the selected GBIF suggestion. */
+  function applySpeciesFields(s: GBIFSuggestion) {
+    setNameFields({
+      common: (lang === 'zh' ? s.vernacularNameZh : s.vernacularName) ?? '',
+      commonEn: s.vernacularName ?? '',
+      scientific: s.canonicalName ?? '',
+    })
+    setTaxonFields({
+      kingdom: s.kingdom ?? '', phylum: s.phylum ?? '', class: s.class ?? '',
+      order: s.order ?? '', family: s.family ?? '', genus: s.genus ?? '',
+      species: s.species ?? '',
+    })
+    const zh = s.taxonZh
+    setTaxonFieldsZh({
+      kingdom: zh?.kingdom ?? '', phylum: zh?.phylum ?? '', class: zh?.class ?? '',
+      order: zh?.order ?? '', family: zh?.family ?? '', genus: zh?.genus ?? '',
+    })
+  }
 
   // Sync auto-filled fields when species changes
   useEffect(() => {
-    if (selectedSpecies && !manualTaxonomy) {
-      setNameFields({
-        common: (lang === 'zh'
-          ? selectedSpecies.vernacularNameZh
-          : selectedSpecies.vernacularName) ?? '',
-        commonEn: selectedSpecies.vernacularName ?? '',
-        scientific: selectedSpecies.canonicalName ?? '',
-      })
-      setTaxonFields({
-        kingdom: selectedSpecies.kingdom ?? '',
-        phylum: selectedSpecies.phylum ?? '',
-        class: selectedSpecies.class ?? '',
-        order: selectedSpecies.order ?? '',
-        family: selectedSpecies.family ?? '',
-        genus: selectedSpecies.genus ?? '',
-        species: selectedSpecies.species ?? '',
-      })
-      const zh = selectedSpecies.taxonZh
-      setTaxonFieldsZh({
-        kingdom: zh?.kingdom ?? '',
-        phylum: zh?.phylum ?? '',
-        class: zh?.class ?? '',
-        order: zh?.order ?? '',
-        family: zh?.family ?? '',
-        genus: zh?.genus ?? '',
-      })
-    }
+    if (selectedSpecies && !manualTaxonomy) applySpeciesFields(selectedSpecies)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedSpecies, manualTaxonomy])
 
   // When switching to auto-fill, reset to GBIF data
   function selectAutoFill() {
     setManualTaxonomy(false)
-    if (selectedSpecies) {
-      setNameFields({
-        common: (lang === 'zh'
-          ? selectedSpecies.vernacularNameZh
-          : selectedSpecies.vernacularName) ?? '',
-        commonEn: selectedSpecies.vernacularName ?? '',
-        scientific: selectedSpecies.canonicalName ?? '',
-      })
-      setTaxonFields({
-        kingdom: selectedSpecies.kingdom ?? '',
-        phylum: selectedSpecies.phylum ?? '',
-        class: selectedSpecies.class ?? '',
-        order: selectedSpecies.order ?? '',
-        family: selectedSpecies.family ?? '',
-        genus: selectedSpecies.genus ?? '',
-        species: selectedSpecies.species ?? '',
-      })
-      const zh = selectedSpecies.taxonZh
-      setTaxonFieldsZh({
-        kingdom: zh?.kingdom ?? '',
-        phylum: zh?.phylum ?? '',
-        class: zh?.class ?? '',
-        order: zh?.order ?? '',
-        family: zh?.family ?? '',
-        genus: zh?.genus ?? '',
-      })
-    }
+    if (selectedSpecies) applySpeciesFields(selectedSpecies)
   }
 
   async function handleFiles(e: React.ChangeEvent<HTMLInputElement>) {
@@ -313,7 +282,7 @@ export function RecordingForm({ lang, dict, initialData }: RecordingFormProps) {
   }
 
   return (
-    <form onSubmit={handleSubmit} noValidate>
+    <form onSubmit={handleSubmit} noValidate onClick={() => setActivePhotoIndex(null)}>
       {/* Header — fixed */}
       <header className="fixed left-0 right-0 top-0 z-50">
         <div className="mx-auto flex max-w-sm md:max-w-2xl items-center justify-between px-4 py-6 bg-white">
@@ -376,8 +345,8 @@ export function RecordingForm({ lang, dict, initialData }: RecordingFormProps) {
                   <FieldLabel htmlFor="auto-fill">
                     <Field orientation="horizontal">
                       <FieldContent>
-                        <FieldTitle className="font-sans-ui">{dict.form.auto_fill}</FieldTitle>
-                        <FieldDescription className="font-sans-ui">{dict.form.auto_fill_hint}</FieldDescription>
+                        <FieldTitle>{dict.form.auto_fill}</FieldTitle>
+                        <FieldDescription>{dict.form.auto_fill_hint}</FieldDescription>
                       </FieldContent>
                       <RadioGroupItem value="auto" id="auto-fill" />
                     </Field>
@@ -385,8 +354,8 @@ export function RecordingForm({ lang, dict, initialData }: RecordingFormProps) {
                   <FieldLabel htmlFor="manual-entry">
                     <Field orientation="horizontal">
                       <FieldContent>
-                        <FieldTitle className="font-sans-ui">{dict.form.manual_entry}</FieldTitle>
-                        <FieldDescription className="font-sans-ui">{dict.form.manual_entry_hint}</FieldDescription>
+                        <FieldTitle>{dict.form.manual_entry}</FieldTitle>
+                        <FieldDescription>{dict.form.manual_entry_hint}</FieldDescription>
                       </FieldContent>
                       <RadioGroupItem value="manual" id="manual-entry" />
                     </Field>
@@ -406,7 +375,7 @@ export function RecordingForm({ lang, dict, initialData }: RecordingFormProps) {
                   />
                 </LabeledField>
                 {lang === 'zh' && (
-                  <LabeledField label="俗名（英文）">
+                  <LabeledField label={dict.form.common_name_en}>
                     <Input
                       value={nameFields.commonEn}
                       onChange={(e) => setNameFields((prev) => ({ ...prev, commonEn: e.target.value }))}
@@ -447,7 +416,7 @@ export function RecordingForm({ lang, dict, initialData }: RecordingFormProps) {
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               placeholder={dict.form.notes_placeholder}
-              className="text-sm font-sans-ui"
+              className="text-sm"
               rows={4}
             />
           </FormSection>
@@ -456,7 +425,7 @@ export function RecordingForm({ lang, dict, initialData }: RecordingFormProps) {
           <FormSection label={dict.detail.date_added}>
             <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
               <PopoverTrigger render={
-                <Button variant="outline" className="w-full justify-between text-left font-normal font-sans-ui" />
+                <Button variant="outline" className="w-full justify-between text-left font-normal" />
               }>
                 <span className="flex items-center gap-2">
                   <MdIcon name="calendar_today" size={16} />
@@ -481,13 +450,13 @@ export function RecordingForm({ lang, dict, initialData }: RecordingFormProps) {
               value={location}
               onChange={(e) => setLocation(e.target.value)}
               placeholder={dict.form.location_placeholder}
-              className="text-sm font-sans-ui"
+              className="text-sm"
             />
           </FormSection>
 
           {/* Photos */}
           <FormSection label={dict.recording.photos}>
-            <span className="text-sm text-muted-foreground font-sans-ui">{dict.form.photos_hint}</span>
+            <span className="text-sm text-muted-foreground">{dict.form.photos_hint}</span>
             <input
               ref={fileInputRef}
               type="file"
@@ -502,7 +471,7 @@ export function RecordingForm({ lang, dict, initialData }: RecordingFormProps) {
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={uploading || uploadedPhotos.length >= 10}
-                className="flex aspect-square flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed border-border text-sm font-sans-ui text-muted-foreground transition-colors hover:border-ring hover:text-foreground disabled:pointer-events-none disabled:opacity-50"
+                className="flex aspect-square flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed border-border text-sm text-muted-foreground transition-colors hover:border-ring hover:text-foreground disabled:pointer-events-none disabled:opacity-50"
               >
                 <MdIcon name="note_stack_add" size={24} />
                 <span>{uploading ? dict.actions.uploading : dict.header.add}</span>
@@ -512,9 +481,12 @@ export function RecordingForm({ lang, dict, initialData }: RecordingFormProps) {
                 <div
                   key={photo.id}
                   className="flex flex-col items-center gap-1"
-                  style={{ transform: `rotate(${ROTATIONS[i % ROTATIONS.length]}deg)` }}
+                  style={{ transform: `rotate(${PHOTO_ROTATIONS[i % PHOTO_ROTATIONS.length]}deg)` }}
                 >
-                  <div className="group/photo relative aspect-square w-full overflow-hidden rounded-xl">
+                  <div
+                    className="group/photo relative aspect-square w-full overflow-hidden rounded-xl"
+                    onClick={(e) => { e.stopPropagation(); setActivePhotoIndex(activePhotoIndex === i ? null : i) }}
+                  >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={photo.previewUrl}
@@ -525,8 +497,12 @@ export function RecordingForm({ lang, dict, initialData }: RecordingFormProps) {
                       type="button"
                       variant="destructive"
                       size="sm"
-                      onClick={() => removePhoto(i)}
-                      className="absolute inset-0 m-auto w-fit bg-red-100 text-destructive hover:bg-red-200 md:opacity-0 md:group-hover/photo:opacity-100 md:transition-opacity font-sans-ui"
+                      onClick={(e) => { e.stopPropagation(); removePhoto(i) }}
+                      className={cn(
+                        'absolute inset-0 m-auto w-fit bg-red-100 text-destructive hover:bg-red-200 transition-opacity',
+                        activePhotoIndex === i ? 'opacity-100' : 'opacity-0 pointer-events-none',
+                        'md:opacity-0 md:pointer-events-auto md:group-hover/photo:opacity-100',
+                      )}
                     >
                       <MdIcon name="delete" size={14} />
                       {dict.actions.delete}
@@ -545,7 +521,7 @@ export function RecordingForm({ lang, dict, initialData }: RecordingFormProps) {
                     }}
                   >
                     <PopoverTrigger render={
-                      <Button type="button" variant="secondary" size="sm" className="font-sans-ui" />
+                      <Button type="button" variant="secondary" size="sm" />
                     }>
                       {photo.caption ? (
                         <>
@@ -561,7 +537,7 @@ export function RecordingForm({ lang, dict, initialData }: RecordingFormProps) {
                         value={captionDraft}
                         onChange={(e) => setCaptionDraft(e.target.value)}
                         placeholder={dict.form.caption_placeholder}
-                        className="text-sm font-sans-ui"
+                        className="text-sm"
                         ref={(el) => el?.focus({ preventScroll: true })}
                       />
                     </PopoverContent>

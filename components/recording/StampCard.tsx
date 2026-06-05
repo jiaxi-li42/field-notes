@@ -12,10 +12,7 @@ interface StampCardProps {
 export function StampCard({ recording, lang, href, rotate = 0 }: StampCardProps) {
   const { species, photos } = recording
   const isZhName = lang === 'zh' && !!species.vernacularNameZh
-  const vernacular = lang === 'zh'
-    ? species.vernacularNameZh || species.vernacularNameEn
-    : species.vernacularNameEn
-  const displayName = vernacular || species.canonicalName
+  const displayName = species.displayName(lang)
   const photo = photos[0]
 
   return (

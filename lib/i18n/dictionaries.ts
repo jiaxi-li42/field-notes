@@ -91,6 +91,7 @@ export type Dictionary = {
     manual_entry: string
     manual_entry_hint: string
     common_name: string
+    common_name_en: string
     scientific_name: string
     change: string
   }

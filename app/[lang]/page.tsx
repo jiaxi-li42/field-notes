@@ -45,8 +45,8 @@ export default async function HomePage({
   // Sort recordings based on selected sort option
   const recordings = [...all].sort((a, b) => {
     if (activeSort === 'name') {
-      const nameA = (lang === 'zh' ? a.species.vernacularNameZh || a.species.vernacularNameEn : a.species.vernacularNameEn) || a.species.canonicalName
-      const nameB = (lang === 'zh' ? b.species.vernacularNameZh || b.species.vernacularNameEn : b.species.vernacularNameEn) || b.species.canonicalName
+      const nameA = a.species.displayName(lang)
+      const nameB = b.species.displayName(lang)
       return nameA.localeCompare(nameB)
     }
     if (activeSort === 'date') {
@@ -82,11 +82,7 @@ export default async function HomePage({
   const circleData = recordings.map((r) => ({
     id: r.id,
     photoUrl: r.photos[0]?.url,
-    displayName:
-      (lang === 'zh'
-        ? r.species.vernacularNameZh || r.species.vernacularNameEn
-        : r.species.vernacularNameEn) ||
-      r.species.canonicalName,
+    displayName: r.species.displayName(lang),
     href: `${basePath}/collection/${r.id}`,
     // Taxonomy for tree visualisation (English — grouping key)
     kingdom: r.species.kingdom,

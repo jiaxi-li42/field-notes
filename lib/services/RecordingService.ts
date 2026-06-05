@@ -44,7 +44,7 @@ function hydrate(row: RecordingRow, photoRows: PhotoRow[]): Recording {
   )
   const photoList = photoRows
     .sort((a, b) => a.sortOrder - b.sortOrder)
-    .map((p) => new Photo(p.url, p.caption, p.id, p.width, p.height))
+    .map((p) => new Photo(p.url, p.caption, p.width, p.height, p.id))
 
   return new Recording(
     row.id,
@@ -57,12 +57,59 @@ function hydrate(row: RecordingRow, photoRows: PhotoRow[]): Recording {
   )
 }
 
+type PhotoInput = { id: string; url: string; caption: string; width: number; height: number }
+
 export type CreateRecordingInput = {
   species: Species
   date: Date
   location: Location
-  photos: { id: string; url: string; caption: string; width: number; height: number }[]
+  photos: PhotoInput[]
   notes: string
+}
+
+async function insertPhotos(recordingId: string, items: PhotoInput[]) {
+  if (items.length === 0) return
+  await db.insert(photos).values(
+    items.map((p, i) => ({
+      id: p.id,
+      recordingId,
+      url: p.url,
+      caption: p.caption,
+      width: p.width,
+      height: p.height,
+      sortOrder: i,
+    })),
+  )
+}
+
+/** Shared field mapping from domain objects to the recordings table. */
+function speciesFields(input: CreateRecordingInput) {
+  const { species, date, location, notes } = input
+  return {
+    speciesGbifKey: species.gbifKey,
+    speciesCanonicalName: species.canonicalName,
+    speciesVernacularNameEn: species.vernacularNameEn,
+    speciesVernacularNameZh: species.vernacularNameZh,
+    speciesKingdom: species.kingdom,
+    taxonKingdom: species.taxon.kingdom,
+    taxonPhylum: species.taxon.phylum,
+    taxonClass: species.taxon.taxonomyClass,
+    taxonOrder: species.taxon.order,
+    taxonFamily: species.taxon.family,
+    taxonGenus: species.taxon.genus,
+    taxonSpecies: species.taxon.species,
+    taxonKingdomZh: species.taxon.kingdomZh,
+    taxonPhylumZh: species.taxon.phylumZh,
+    taxonClassZh: species.taxon.taxonomyClassZh,
+    taxonOrderZh: species.taxon.orderZh,
+    taxonFamilyZh: species.taxon.familyZh,
+    taxonGenusZh: species.taxon.genusZh,
+    date: date.toISOString(),
+    locationPlaceName: location.placeName,
+    locationLat: location.lat ?? null,
+    locationLng: location.lng ?? null,
+    notes,
+  }
 }
 
 export class RecordingService {
@@ -109,63 +156,10 @@ export class RecordingService {
     return hydrate(row, photoRows)
   }
 
-  static async create(userId: string, input: CreateRecordingInput): Promise<Recording> {
+  static async create(userId: string, input: CreateRecordingInput): Promise<void> {
     const id = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
-    const now = new Date()
-
-    await db.insert(recordings).values({
-      id,
-      userId,
-      speciesGbifKey: input.species.gbifKey,
-      speciesCanonicalName: input.species.canonicalName,
-      speciesVernacularNameEn: input.species.vernacularNameEn,
-      speciesVernacularNameZh: input.species.vernacularNameZh,
-      speciesKingdom: input.species.kingdom,
-      taxonKingdom: input.species.taxon.kingdom,
-      taxonPhylum: input.species.taxon.phylum,
-      taxonClass: input.species.taxon.taxonomyClass,
-      taxonOrder: input.species.taxon.order,
-      taxonFamily: input.species.taxon.family,
-      taxonGenus: input.species.taxon.genus,
-      taxonSpecies: input.species.taxon.species,
-      taxonKingdomZh: input.species.taxon.kingdomZh,
-      taxonPhylumZh: input.species.taxon.phylumZh,
-      taxonClassZh: input.species.taxon.taxonomyClassZh,
-      taxonOrderZh: input.species.taxon.orderZh,
-      taxonFamilyZh: input.species.taxon.familyZh,
-      taxonGenusZh: input.species.taxon.genusZh,
-      date: input.date.toISOString(),
-      locationPlaceName: input.location.placeName,
-      locationLat: input.location.lat ?? null,
-      locationLng: input.location.lng ?? null,
-      notes: input.notes,
-      createdAt: now,
-    })
-
-    if (input.photos.length > 0) {
-      await db.insert(photos).values(
-        input.photos.map((p, i) => ({
-          id: p.id,
-          recordingId: id,
-          url: p.url,
-          caption: p.caption,
-          width: p.width,
-          height: p.height,
-          sortOrder: i,
-        })),
-      )
-    }
-
-    const photoList = input.photos.map((p) => new Photo(p.url, p.caption, p.id, p.width, p.height))
-    return new Recording(
-      id,
-      input.species,
-      input.date,
-      input.location,
-      photoList,
-      input.notes,
-      now,
-    )
+    await db.insert(recordings).values({ id, userId, ...speciesFields(input), createdAt: new Date() })
+    await insertPhotos(id, input.photos)
   }
 
   static async update(userId: string, id: string, input: CreateRecordingInput): Promise<void> {
@@ -177,32 +171,7 @@ export class RecordingService {
 
     if (!row || row.userId !== userId) return
 
-    // Update recording fields
-    await db.update(recordings).set({
-      speciesGbifKey: input.species.gbifKey,
-      speciesCanonicalName: input.species.canonicalName,
-      speciesVernacularNameEn: input.species.vernacularNameEn,
-      speciesVernacularNameZh: input.species.vernacularNameZh,
-      speciesKingdom: input.species.kingdom,
-      taxonKingdom: input.species.taxon.kingdom,
-      taxonPhylum: input.species.taxon.phylum,
-      taxonClass: input.species.taxon.taxonomyClass,
-      taxonOrder: input.species.taxon.order,
-      taxonFamily: input.species.taxon.family,
-      taxonGenus: input.species.taxon.genus,
-      taxonSpecies: input.species.taxon.species,
-      taxonKingdomZh: input.species.taxon.kingdomZh,
-      taxonPhylumZh: input.species.taxon.phylumZh,
-      taxonClassZh: input.species.taxon.taxonomyClassZh,
-      taxonOrderZh: input.species.taxon.orderZh,
-      taxonFamilyZh: input.species.taxon.familyZh,
-      taxonGenusZh: input.species.taxon.genusZh,
-      date: input.date.toISOString(),
-      locationPlaceName: input.location.placeName,
-      locationLat: input.location.lat ?? null,
-      locationLng: input.location.lng ?? null,
-      notes: input.notes,
-    }).where(eq(recordings.id, id))
+    await db.update(recordings).set(speciesFields(input)).where(eq(recordings.id, id))
 
     // Replace photos: find removed ones, delete from R2, then replace rows
     const oldPhotos = await db
@@ -214,24 +183,11 @@ export class RecordingService {
     const removedPhotos = oldPhotos.filter((p) => !newPhotoIds.has(p.id))
 
     await db.delete(photos).where(eq(photos.recordingId, id))
-
-    if (input.photos.length > 0) {
-      await db.insert(photos).values(
-        input.photos.map((p, i) => ({
-          id: p.id,
-          recordingId: id,
-          url: p.url,
-          caption: p.caption,
-          width: p.width,
-          height: p.height,
-          sortOrder: i,
-        })),
-      )
-    }
+    await insertPhotos(id, input.photos)
 
     // Delete removed photos from R2 in background (non-blocking)
     if (removedPhotos.length > 0) {
-      Promise.allSettled(removedPhotos.map((p) => StorageService.deletePhoto(p.url)))
+      void Promise.allSettled(removedPhotos.map((p) => StorageService.deletePhoto(p.url)))
     }
   }
 
@@ -254,6 +210,6 @@ export class RecordingService {
     await db.delete(recordings).where(eq(recordings.id, id))
 
     // Delete from R2 in background (non-blocking)
-    Promise.allSettled(photoRows.map((p) => StorageService.deletePhoto(p.url)))
+    void Promise.allSettled(photoRows.map((p) => StorageService.deletePhoto(p.url)))
   }
 }
