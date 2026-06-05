@@ -595,8 +595,8 @@ export function CollectionView({
                     zIndex,
                   }}
                   onClick={(e) => handleCardClick(e, i)}
-                  onMouseEnter={() => { if (!zoomed) handleCardEnter(i) }}
-                  onMouseLeave={() => { if (!zoomed) handleCardLeave() }}
+                  onPointerEnter={(e) => { if (e.pointerType !== 'touch' && !zoomed) handleCardEnter(i) }}
+                  onPointerLeave={(e) => { if (e.pointerType !== 'touch' && !zoomed) handleCardLeave() }}
                 >
                   {isFocused ? (
                     <Link href={card.href} className="block h-full w-full">

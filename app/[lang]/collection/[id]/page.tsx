@@ -4,7 +4,7 @@ import { getDictionary } from '@/lib/i18n/dictionaries'
 import { RecordingService } from '@/lib/services/RecordingService'
 import { buttonVariants } from '@/components/ui/button'
 import { PhotoCarousel, PhotoGrid } from '@/components/recording/PhotoGrid'
-import { DetailActions, BackButton } from '@/components/recording/RecordingForm'
+import { DetailActions, BackButton } from '@/components/recording/DetailActions'
 import { formatDate } from '@/lib/utils/date'
 import { cn } from '@/lib/utils'
 import { langPrefix } from '@/lib/utils/i18n'
@@ -54,6 +54,7 @@ export default async function RecordingDetailPage({
           />
           <DetailActions
           recordingId={id}
+          redirectTo={base}
           editHref={`${base === '/' ? '' : base}/collection/${id}/edit`}
           labels={{
             edit: dict.detail.edit,

@@ -1,7 +1,7 @@
 {
   "nav": {
     "collection": "Collection",
-    "new": "新建记录"
+    "new": "Record"
   },
   "kingdoms": {
     "Animalia": "动物界",
@@ -22,7 +22,7 @@
     "clear_all": "清除全部",
     "empty": "空空如也",
     "empty_hint": "添加一条物种记录，它将显示在这里。",
-    "empty_filtered": "此界别暂无记录"
+    "empty_filtered": "该界暂无记录。"
   },
   "header": {
     "search": "搜索",
@@ -62,6 +62,8 @@
   },
   "actions": {
     "save": "保存",
+    "saving": "保存中…",
+    "uploading": "上传中…",
     "cancel": "取消",
     "delete": "删除"
   },
@@ -71,32 +73,36 @@
     "username": "用户名",
     "password": "密码",
     "confirm_password": "确认密码",
-    "login_error": "用户名或密码错误",
+    "login_error": "用户名或密码不正确，请重试。",
     "username_taken": "用户名已被使用",
     "username_invalid": "用户名须为3–20个字母、数字或下划线",
     "password_short": "密码至少6个字符",
     "password_mismatch": "两次密码不一致",
-    "register_error": "注册失败",
+    "register_error": "出了点问题，请重试。",
     "logout": "退出登录",
     "no_account": "还没有账号？",
     "have_account": "已有账号？"
   },
   "form": {
-    "species_placeholder": "按俗名或学名搜索…",
+    "species_placeholder": "输入英文俗名或学名…",
+    "species_trigger": "从GBIF数据库中搜索物种",
     "species_hint": "至少输入两个字符",
     "date_placeholder": "选择日期",
-    "location_placeholder": "例：Holyrood Park, Edinburgh",
-    "notes_placeholder": "行为、栖息地、数量…",
-    "photos_hint": "最多10张图片",
-    "no_results": "未找到物种",
+    "location_placeholder": "如：英国，爱丁堡，荷里路德公园",
+    "notes_placeholder": "简要记录你观察到的物种及其环境吧，如：行为、栖息地、数量、天气…",
+    "photos_hint": "（最多10张照片）",
+    "no_results": "未找到匹配的物种。",
     "searching": "搜索中…",
-    "caption_placeholder": "添加说明",
-    "save_error": "保存失败，请重试。",
-    "auto_fill": "自动填充",
-    "auto_fill_hint": "使用GBIF分类数据",
-    "manual_entry": "手动输入",
-    "manual_entry_hint": "自行填写分类信息",
+    "caption_placeholder": "添加注释（可选）",
+    "add_caption": "注释",
+    "caption_added": "已添加",
+    "save_error": "出了点问题，请重试。",
+    "auto_fill": "自动填充分类",
+    "auto_fill_hint": "从GBIF数据库中填充界、门、纲等分类信息",
+    "manual_entry": "手动编辑",
+    "manual_entry_hint": "检查或修正分类信息",
     "common_name": "俗名",
-    "scientific_name": "学名"
+    "scientific_name": "学名",
+    "change": "重置"
   }
 }

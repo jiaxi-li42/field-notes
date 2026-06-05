@@ -7,30 +7,48 @@ const GBIF_SEARCH = 'https://api.gbif.org/v1/species/search'
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type GBIFResult = Record<string, any>
 
+// ── Helpers ─────────────────────────────────────────────────────────────────
+
 /**
- * Score how well a result's vernacular names match the query (lower = better).
- * For prefix matches, shorter names score better so "English oak" beats
- * "English oak kermes" when the query is "english oa".
+ * Pick the best English vernacular name in a single pass.
+ * Priority: exact query match > shortest prefix match > first English name.
+ * `q` must already be lowercased.
  */
-function vernacularScore(result: GBIFResult, query: string): number {
-  const q = query.toLowerCase()
-  let bestPrefix = Infinity
-  const names: string[] = (result.vernacularNames ?? []).map(
-    (v: GBIFResult) => (v.vernacularName ?? '').toLowerCase(),
-  )
-  for (const name of names) {
-    if (name === q) return 0                               // exact match
-    if (name.startsWith(q)) bestPrefix = Math.min(bestPrefix, name.length)
+function pickEnglishName(result: GBIFResult, q: string): string {
+  const names: { vernacularName?: string; language?: string }[] =
+    result.vernacularNames ?? []
+  let first = ''
+  let bestPrefix = ''
+  let bestLen = Infinity
+
+  for (const v of names) {
+    if (v.language !== 'eng') continue
+    const name = v.vernacularName ?? ''
+    if (!first) first = name
+
+    const lower = name.toLowerCase()
+    if (lower === q) return name                             // exact — can't beat this
+    if (lower.startsWith(q) && lower.length < bestLen) {
+      bestPrefix = name
+      bestLen = lower.length
+    }
   }
-  if (bestPrefix < Infinity) return 100 + bestPrefix       // prefix — shorter wins
-  const canon = (result.canonicalName ?? '').toLowerCase()
-  if (canon.startsWith(q)) return 200 + canon.length       // canonical prefix — shorter wins
+  return bestPrefix || first
+}
+
+/**
+ * Score how well a displayed name matches the query (lower = better).
+ * All arguments must already be lowercased.
+ */
+function displayScore(display: string, canonical: string, q: string): number {
+  if (display === q) return 0                                // exact display match
+  if (display.startsWith(q)) return 100 + display.length     // display prefix — shorter wins
+  if (canonical.startsWith(q)) return 200 + canonical.length // canonical prefix — shorter wins
   return 400
 }
 
-/** Rank-based boost: species/subspecies first, then genus, then everything else. */
-function rankScore(r: GBIFResult): number {
-  const rank = (r.rank ?? '').toUpperCase()
+/** Rank tiebreaker: species/subspecies > genus > other. */
+function rankScore(rank: string): number {
   if (rank === 'SPECIES' || rank === 'SUBSPECIES') return 0
   if (rank === 'GENUS') return 1
   return 2
@@ -38,32 +56,32 @@ function rankScore(r: GBIFResult): number {
 
 /** Pick the best duplicate: prefer backbone entry, then most vernacular names. */
 function dataQuality(r: GBIFResult): number {
-  let score = 0
-  if (r.key === r.nubKey) score += 100
-  score += (r.vernacularNames ?? []).length
-  return score
+  return (r.key === r.nubKey ? 100 : 0) + (r.vernacularNames ?? []).length
 }
 
 /** Deduplicate by nubKey (falls back to canonicalName), keeping the richest entry. */
 function deduplicate(results: GBIFResult[]): GBIFResult[] {
   const best = new Map<string, GBIFResult>()
   for (const r of results) {
-    const dedupeKey = String(r.nubKey ?? '') || (r.canonicalName ?? '')
-    if (!dedupeKey) continue
-    const existing = best.get(dedupeKey)
+    const id = String(r.nubKey ?? '') || (r.canonicalName ?? '')
+    if (!id) continue
+    const existing = best.get(id)
     if (!existing || dataQuality(r) > dataQuality(existing)) {
-      best.set(dedupeKey, r)
+      best.set(id, r)
     }
   }
   return [...best.values()]
 }
 
+// ── Route handler ───────────────────────────────────────────────────────────
+
 export async function GET(request: NextRequest) {
-  const q = request.nextUrl.searchParams.get('q')?.trim()
-  if (!q || q.length < 2) return NextResponse.json([])
+  const raw = request.nextUrl.searchParams.get('q')?.trim()
+  if (!raw || raw.length < 2) return NextResponse.json([])
+  const q = raw.toLowerCase()
 
   const url = new URL(GBIF_SEARCH)
-  url.searchParams.set('q', q)
+  url.searchParams.set('q', raw)
   url.searchParams.set('datasetKey', BACKBONE)
   url.searchParams.set('status', 'ACCEPTED')
   url.searchParams.set('limit', '50')
@@ -71,25 +89,37 @@ export async function GET(request: NextRequest) {
   const res = await fetch(url.toString(), { next: { revalidate: 3600 } })
   if (!res.ok) return NextResponse.json([], { status: 502 })
 
-  const data = await res.json()
-  const results = (data.results ?? []) as GBIFResult[]
+  const { results = [] } = await res.json()
+  const unique = deduplicate(results as GBIFResult[])
 
-  const unique = deduplicate(results)
-
-  // Sort: species rank first, then by vernacular/canonical match quality
-  unique.sort((a, b) => {
-    const rd = rankScore(a) - rankScore(b)
-    if (rd !== 0) return rd
-    return vernacularScore(a, q) - vernacularScore(b, q)
+  // Precompute scores + trim to client-needed fields in one pass.
+  const scored = unique.map((r) => {
+    const vernacularName = pickEnglishName(r, q)
+    const canonicalName: string = r.canonicalName ?? ''
+    return {
+      _ds: displayScore(vernacularName.toLowerCase(), canonicalName.toLowerCase(), q),
+      _rs: rankScore(((r.rank ?? '') as string).toUpperCase()),
+      _ps: (r.vernacularNames ?? []).length,
+      out: {
+        key: r.key,
+        canonicalName,
+        vernacularName,
+        rank: r.rank,
+        kingdom: r.kingdom,
+        phylum: r.phylum,
+        class: r.class,
+        order: r.order,
+        family: r.family,
+        genus: r.genus,
+        species: r.species,
+      },
+    }
   })
 
-  // Flatten: pick the first English vernacular name (or any) as a top-level field
-  const out = unique.slice(0, 10).map((r) => {
-    const names: { vernacularName?: string; language?: string }[] = r.vernacularNames ?? []
-    const eng = names.find((v) => v.language === 'eng')
-    const vernacularName = eng?.vernacularName ?? names[0]?.vernacularName ?? ''
-    return { ...r, vernacularName }
-  })
+  // Sort by precomputed scores — comparator does no extra work.
+  scored.sort((a, b) =>
+    (a._ds - b._ds) || (a._rs - b._rs) || (b._ps - a._ps),
+  )
 
-  return NextResponse.json(out)
+  return NextResponse.json(scored.slice(0, 10).map((s) => s.out))
 }

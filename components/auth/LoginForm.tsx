@@ -37,7 +37,6 @@ export function LoginForm({ lang, dict }: LoginFormProps) {
         setError(dict.login_error)
       } else {
         router.push(prefix || '/')
-        router.refresh()
       }
     })
   }
@@ -46,11 +45,11 @@ export function LoginForm({ lang, dict }: LoginFormProps) {
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="space-y-2">
         <label htmlFor="username" className="text-sm font-medium">{dict.username}</label>
-        <Input id="username" name="username" required autoComplete="username" />
+        <Input id="username" name="username" required autoComplete="username" className="text-sm" />
       </div>
       <div className="space-y-2">
         <label htmlFor="password" className="text-sm font-medium">{dict.password}</label>
-        <Input id="password" name="password" type="password" required autoComplete="current-password" />
+        <Input id="password" name="password" type="password" required autoComplete="current-password" className="text-sm" />
       </div>
       {error && <p className="text-sm text-destructive">{error}</p>}
       <Button type="submit" className="w-full" disabled={isPending}>

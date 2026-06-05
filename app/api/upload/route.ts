@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { PutObjectCommand } from '@aws-sdk/client-s3'
+import sharp from 'sharp'
 import { auth } from '@/lib/auth'
 import { r2, getR2PublicUrl } from '@/lib/services/r2'
 
@@ -24,17 +25,20 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'File too large' }, { status: 400 })
   }
 
-  const ext = file.name.split('.').pop() ?? 'jpg'
   const id = crypto.randomUUID()
-  const key = `photos/${session.user.id}/${id}.${ext}`
+  const key = `photos/${session.user.id}/${id}.webp`
 
-  const buffer = Buffer.from(await file.arrayBuffer())
+  const raw = Buffer.from(await file.arrayBuffer())
+  const buffer = file.type === 'image/webp'
+    ? raw
+    : await sharp(raw).webp({ quality: 80 }).toBuffer()
+
   await r2.send(
     new PutObjectCommand({
       Bucket: process.env.R2_BUCKET_NAME!,
       Key: key,
       Body: buffer,
-      ContentType: file.type,
+      ContentType: 'image/webp',
     }),
   )
 

@@ -71,15 +71,18 @@ export type Dictionary = {
     no_account: string
     have_account: string
   }
-  actions: { save: string; cancel: string; delete: string }
+  actions: { save: string; saving: string; uploading: string; cancel: string; delete: string }
   form: {
     species_placeholder: string
+    species_trigger: string
     species_hint: string
     date_placeholder: string
     location_placeholder: string
     notes_placeholder: string
     photos_hint: string
     caption_placeholder: string
+    add_caption: string
+    caption_added: string
     no_results: string
     searching: string
     save_error: string
@@ -89,6 +92,7 @@ export type Dictionary = {
     manual_entry_hint: string
     common_name: string
     scientific_name: string
+    change: string
   }
 }
 

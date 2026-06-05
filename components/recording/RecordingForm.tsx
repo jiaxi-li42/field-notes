@@ -13,24 +13,6 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover'
 import {
-  DropdownMenu,
-  DropdownMenuTrigger,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-} from '@/components/ui/dropdown-menu'
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog'
-import {
-  FieldGroup,
   Field,
   FieldContent,
   FieldLabel,
@@ -39,10 +21,10 @@ import {
 } from '@/components/ui/field'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { TaxonomySearch, type GBIFSuggestion } from '@/components/taxonomy/TaxonomySearch'
-import { KingdomBadge } from '@/components/taxonomy/KingdomBadge'
-import { createRecording, deleteRecording } from '@/app/actions/recordings'
+import { createRecording } from '@/app/actions/recordings'
 import { formatDate } from '@/lib/utils/date'
 import { cn } from '@/lib/utils'
+import { langPrefix } from '@/lib/utils/i18n'
 import type { Kingdom } from '@/lib/models/Species'
 import type { Dictionary } from '@/lib/i18n/dictionaries'
 
@@ -69,6 +51,26 @@ function readDimensions(src: string): Promise<{ width: number; height: number }>
 /* ------------------------------------------------------------------ */
 
 const fieldLabelClass = 'text-xs font-bold text-muted-foreground lowercase'
+const fieldInputClass = 'h-8 text-sm font-sans-ui'
+const ROTATIONS = [-0.8, 0.6, -0.5, 1.0, -0.3, 0.7, -0.9, 0.4, -0.6, 0.8]
+
+function FormSection({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="py-4 md:grid md:grid-cols-3">
+      <span className={cn(fieldLabelClass, 'block mb-2 md:mb-0')}>{label}</span>
+      <div className="flex flex-col gap-2 md:col-span-2">{children}</div>
+    </div>
+  )
+}
+
+function LabeledField({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="flex flex-col gap-1 md:flex-row md:items-center md:gap-0">
+      <span className="md:w-28 shrink-0 text-sm text-muted-foreground font-sans-ui">{label}</span>
+      <div className="flex items-center gap-2 flex-1">{children}</div>
+    </div>
+  )
+}
 
 /* ------------------------------------------------------------------ */
 /*  RecordingForm                                                      */
@@ -98,6 +100,8 @@ export function RecordingForm({ lang, dict }: RecordingFormProps) {
   const [notes, setNotes] = useState('')
   const [uploadedPhotos, setUploadedPhotos] = useState<UploadedPhoto[]>([])
   const [uploading, setUploading] = useState(false)
+  const [calendarOpen, setCalendarOpen] = useState(false)
+  const [editingCaption, setEditingCaption] = useState<{ index: number; draft: string } | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   // Sync auto-filled fields when species changes
@@ -188,7 +192,7 @@ export function RecordingForm({ lang, dict }: RecordingFormProps) {
         .filter((r): r is PromiseFulfilledResult<UploadedPhoto | null> => r.status === 'fulfilled')
         .map((r) => r.value)
         .filter((v): v is UploadedPhoto => v !== null)
-      setUploadedPhotos((prev) => [...prev, ...uploaded].slice(0, 10))
+      setUploadedPhotos((prev) => [...uploaded, ...prev].slice(0, 10))
     } finally {
       setUploading(false)
       if (fileInputRef.current) fileInputRef.current.value = ''
@@ -222,6 +226,7 @@ export function RecordingForm({ lang, dict }: RecordingFormProps) {
     if (!selectedSpecies) return
     setError(null)
 
+    const base = langPrefix(lang) || '/'
     startTransition(async () => {
       try {
         // In auto-fill mode, read taxonomy directly from selectedSpecies
@@ -273,8 +278,7 @@ export function RecordingForm({ lang, dict }: RecordingFormProps) {
           locationPlaceName: location,
           notes,
           photos: uploadedPhotos.map((p) => ({ id: p.id, url: p.url, caption: p.caption, width: p.width, height: p.height })),
-        })
-        router.back()
+        }, base)
       } catch {
         setError(dict.form.save_error)
       }
@@ -285,7 +289,7 @@ export function RecordingForm({ lang, dict }: RecordingFormProps) {
     <form onSubmit={handleSubmit} noValidate>
       {/* Header — fixed */}
       <header className="fixed left-0 right-0 top-0 z-50">
-        <div className="mx-auto flex max-w-sm md:max-w-2xl items-center justify-between px-4 py-6">
+        <div className="mx-auto flex max-w-sm md:max-w-2xl items-center justify-between px-4 py-6 bg-white">
           {/* Left — title */}
           <h1 className="text-2xl tracking-tight">{dict.nav.new}</h1>
 
@@ -305,168 +309,156 @@ export function RecordingForm({ lang, dict }: RecordingFormProps) {
               className="px-2 lowercase"
               disabled={!selectedSpecies || isPending || uploading}
             >
-              {isPending ? '…' : dict.actions.save}
+              {isPending ? dict.actions.saving : dict.actions.save}
             </Button>
           </div>
         </div>
       </header>
 
       {/* Content */}
-      <div className="mx-auto max-w-sm md:max-w-2xl px-4 pt-20">
-        <FieldGroup className="divide-y divide-border gap-0">
+      <div className="mx-auto max-w-sm md:max-w-2xl px-4 pt-16 pb-4">
+        <div className="divide-y divide-border">
 
           {/* Species */}
-          <Field className="py-4">
-            <FieldLabel className={fieldLabelClass}>{dict.recording.species}</FieldLabel>
+          <FormSection label={dict.recording.species}>
             <TaxonomySearch
               placeholder={dict.form.species_placeholder}
+              triggerLabel={dict.form.species_trigger}
               noResults={dict.form.no_results}
               searching={dict.form.searching}
+              changeLabel={dict.form.change}
               onSelect={(s) => setSelectedSpecies(s)}
-              onClear={() => setSelectedSpecies(null)}
+              onClear={() => {
+                setSelectedSpecies(null)
+                setManualTaxonomy(false)
+              }}
             />
-            {selectedSpecies?.kingdom && (
-              <div className="flex items-center gap-2">
-                <KingdomBadge
-                  kingdom={selectedSpecies.kingdom as Kingdom}
-                  label={dict.kingdoms[selectedSpecies.kingdom] ?? selectedSpecies.kingdom}
-                />
-                <span className="text-sm text-muted-foreground italic font-sans-ui">
-                  {selectedSpecies.canonicalName}
-                </span>
-              </div>
-            )}
 
             {/* Choice Card — auto-fill vs manual */}
             {selectedSpecies && (
-              <RadioGroup
-                value={manualTaxonomy ? 'manual' : 'auto'}
-                onValueChange={(v) => {
-                  if (v === 'auto') selectAutoFill()
-                  else setManualTaxonomy(true)
-                }}
-              >
-                <FieldLabel htmlFor="auto-fill">
-                  <Field orientation="horizontal">
-                    <FieldContent>
-                      <FieldTitle className="font-sans-ui">{dict.form.auto_fill}</FieldTitle>
-                      <FieldDescription className="font-sans-ui">{dict.form.auto_fill_hint}</FieldDescription>
-                    </FieldContent>
-                    <RadioGroupItem value="auto" id="auto-fill" />
-                  </Field>
-                </FieldLabel>
-                <FieldLabel htmlFor="manual-entry">
-                  <Field orientation="horizontal">
-                    <FieldContent>
-                      <FieldTitle className="font-sans-ui">{dict.form.manual_entry}</FieldTitle>
-                      <FieldDescription className="font-sans-ui">{dict.form.manual_entry_hint}</FieldDescription>
-                    </FieldContent>
-                    <RadioGroupItem value="manual" id="manual-entry" />
-                  </Field>
-                </FieldLabel>
-              </RadioGroup>
+              <div className="pt-2">
+                <RadioGroup
+                  value={manualTaxonomy ? 'manual' : 'auto'}
+                  onValueChange={(v) => {
+                    if (v === 'auto') selectAutoFill()
+                    else setManualTaxonomy(true)
+                  }}
+                >
+                  <FieldLabel htmlFor="auto-fill">
+                    <Field orientation="horizontal">
+                      <FieldContent>
+                        <FieldTitle className="font-sans-ui">{dict.form.auto_fill}</FieldTitle>
+                        <FieldDescription className="font-sans-ui">{dict.form.auto_fill_hint}</FieldDescription>
+                      </FieldContent>
+                      <RadioGroupItem value="auto" id="auto-fill" />
+                    </Field>
+                  </FieldLabel>
+                  <FieldLabel htmlFor="manual-entry">
+                    <Field orientation="horizontal">
+                      <FieldContent>
+                        <FieldTitle className="font-sans-ui">{dict.form.manual_entry}</FieldTitle>
+                        <FieldDescription className="font-sans-ui">{dict.form.manual_entry_hint}</FieldDescription>
+                      </FieldContent>
+                      <RadioGroupItem value="manual" id="manual-entry" />
+                    </Field>
+                  </FieldLabel>
+                </RadioGroup>
+              </div>
             )}
 
             {/* Manual taxonomy inputs */}
             {selectedSpecies && manualTaxonomy && (
-              <div className="flex flex-col gap-2 pt-1">
-                <div className="flex items-center gap-3">
-                  <span className="w-16 shrink-0 text-xs text-muted-foreground font-sans-ui">{dict.form.common_name}</span>
+              <div className="flex flex-col pt-2 gap-3">
+                <LabeledField label={dict.form.common_name}>
                   <Input
                     value={nameFields.common}
                     onChange={(e) => setNameFields((prev) => ({ ...prev, common: e.target.value }))}
-                    className="h-8 text-sm font-sans-ui"
+                    className={fieldInputClass}
                   />
-                </div>
+                </LabeledField>
                 {lang === 'zh' && (
-                  <div className="flex items-center gap-3">
-                    <span className="w-16 shrink-0 text-xs text-muted-foreground font-sans-ui">俗名（英文）</span>
+                  <LabeledField label="俗名（英文）">
                     <Input
                       value={nameFields.commonEn}
                       onChange={(e) => setNameFields((prev) => ({ ...prev, commonEn: e.target.value }))}
-                      className="h-8 text-sm font-sans-ui"
+                      className={fieldInputClass}
                     />
-                  </div>
+                  </LabeledField>
                 )}
-                <div className="flex items-center gap-3">
-                  <span className="w-16 shrink-0 text-xs text-muted-foreground font-sans-ui">{dict.form.scientific_name}</span>
+                <LabeledField label={dict.form.scientific_name}>
                   <Input
                     value={nameFields.scientific}
                     onChange={(e) => setNameFields((prev) => ({ ...prev, scientific: e.target.value }))}
-                    className="h-8 text-sm font-sans-ui italic"
+                    className={cn(fieldInputClass, 'italic')}
                   />
-                </div>
+                </LabeledField>
                 {(['kingdom', 'phylum', 'class', 'order', 'family', 'genus', 'species'] as const).map((rank) => (
-                  <div key={rank} className="flex items-center gap-3">
-                    <span className="w-16 shrink-0 text-xs text-muted-foreground font-sans-ui">{dict.ranks[rank]}</span>
+                  <LabeledField key={rank} label={dict.ranks[rank]}>
                     {lang === 'zh' && rank !== 'species' && (
                       <Input
                         value={taxonFieldsZh[rank]}
                         onChange={(e) => setTaxonFieldsZh((prev) => ({ ...prev, [rank]: e.target.value }))}
-                        className="h-8 text-sm font-sans-ui"
+                        className={fieldInputClass}
                       />
                     )}
                     <Input
                       value={taxonFields[rank]}
                       onChange={(e) => setTaxonFields((prev) => ({ ...prev, [rank]: e.target.value }))}
-                      className="h-8 text-sm font-sans-ui italic"
+                      className={cn(fieldInputClass, 'italic')}
                     />
-                  </div>
+                  </LabeledField>
                 ))}
               </div>
             )}
-          </Field>
+          </FormSection>
 
           {/* Notes */}
-          <Field className="py-4">
-            <FieldLabel className={fieldLabelClass}>{dict.recording.notes}</FieldLabel>
+          <FormSection label={dict.recording.notes}>
             <Textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               placeholder={dict.form.notes_placeholder}
-              className="font-sans-ui"
+              className="text-sm font-sans-ui"
               rows={4}
             />
-          </Field>
+          </FormSection>
 
           {/* Date Added */}
-          <Field className="py-4">
-            <FieldLabel className={fieldLabelClass}>{dict.detail.date_added}</FieldLabel>
-            <Popover>
-              <PopoverTrigger
-                className={cn(buttonVariants({ variant: 'outline' }), 'w-full justify-start font-normal font-sans-ui')}
-              >
-                <MdIcon name="calendar_today" className="mr-2" />
-                {formatDate(date, lang)}
+          <FormSection label={dict.detail.date_added}>
+            <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
+              <PopoverTrigger render={
+                <Button variant="outline" className="w-full justify-between text-left font-normal font-sans-ui" />
+              }>
+                <span className="flex items-center gap-2">
+                  <MdIcon name="calendar_today" size={16} />
+                  {formatDate(date, lang)}
+                </span>
+                <MdIcon name="keyboard_arrow_down" size={18} className="text-muted-foreground" />
               </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
+              <PopoverContent className="w-auto p-0 font-sans-ui" align="start">
                 <Calendar
                   mode="single"
                   selected={date}
-                  onSelect={(d) => { if (d) setDate(d) }}
+                  onSelect={(d) => { if (d) { setDate(d); setCalendarOpen(false) } }}
                   disabled={(d) => d > new Date()}
                 />
               </PopoverContent>
             </Popover>
-          </Field>
+          </FormSection>
 
           {/* Observed Location */}
-          <Field className="py-4">
-            <FieldLabel className={fieldLabelClass}>{dict.detail.observed_location}</FieldLabel>
+          <FormSection label={dict.detail.observed_location}>
             <Input
               value={location}
               onChange={(e) => setLocation(e.target.value)}
               placeholder={dict.form.location_placeholder}
-              className="font-sans-ui"
+              className="text-sm font-sans-ui"
             />
-          </Field>
+          </FormSection>
 
           {/* Photos */}
-          <Field className="py-4">
-            <div className="flex items-center justify-between">
-              <FieldLabel className={fieldLabelClass}>{dict.recording.photos}</FieldLabel>
-              <span className="text-xs text-muted-foreground">{dict.form.photos_hint}</span>
-            </div>
+          <FormSection label={dict.recording.photos}>
+            <span className="text-sm text-muted-foreground font-sans-ui">{dict.form.photos_hint}</span>
             <input
               ref={fileInputRef}
               type="file"
@@ -475,150 +467,84 @@ export function RecordingForm({ lang, dict }: RecordingFormProps) {
               className="sr-only"
               onChange={handleFiles}
             />
-            {uploadedPhotos.length < 10 && (
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+              {/* Add tile */}
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
-                disabled={uploading}
-                className="flex h-20 w-full items-center justify-center gap-2 rounded-lg border-2 border-dashed border-border text-sm text-muted-foreground transition-colors hover:border-ring hover:text-foreground disabled:opacity-50"
+                disabled={uploading || uploadedPhotos.length >= 10}
+                className="flex aspect-square flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed border-border text-sm font-sans-ui text-muted-foreground transition-colors hover:border-ring hover:text-foreground disabled:pointer-events-none disabled:opacity-50"
               >
-                <MdIcon name={uploading ? 'hourglass_empty' : 'add_photo_alternate'} />
-                <span>{uploading ? '…' : dict.recording.photos}</span>
+                <MdIcon name="note_stack_add" size={24} />
+                <span>{uploading ? dict.actions.uploading : dict.header.add}</span>
               </button>
-            )}
-            {uploadedPhotos.length > 0 && (
-              <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
-                {uploadedPhotos.map((photo, i) => (
-                  <div key={photo.id}>
-                    <div className="relative aspect-square">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={photo.previewUrl}
-                        alt=""
-                        className="size-full rounded-md object-cover"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => removePhoto(i)}
-                        className="absolute -top-1.5 -right-1.5 flex size-5 items-center justify-center rounded-full bg-foreground text-background"
-                        aria-label="Remove photo"
-                      >
-                        <MdIcon name="close" size={14} />
-                      </button>
-                    </div>
-                    <input
-                      type="text"
-                      value={photo.caption}
-                      onChange={(e) => updateCaption(i, e.target.value)}
-                      placeholder={dict.form.caption_placeholder}
-                      className="mt-1 w-full border-0 border-b border-transparent bg-transparent px-0 py-0.5 text-xs outline-none placeholder:text-muted-foreground/50 focus:border-border"
+              {/* Uploaded photos */}
+              {uploadedPhotos.map((photo, i) => (
+                <div
+                  key={photo.id}
+                  className="flex flex-col items-center gap-1"
+                  style={{ transform: `rotate(${ROTATIONS[i % ROTATIONS.length]}deg)` }}
+                >
+                  <div className="relative aspect-square w-full overflow-hidden rounded-xl">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={photo.previewUrl}
+                      alt=""
+                      className="size-full object-cover"
                     />
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="icon-xs"
+                      onClick={() => removePhoto(i)}
+                      className="absolute top-1 right-1"
+                      aria-label="Remove photo"
+                    >
+                      <MdIcon name="close" size={14} />
+                    </Button>
                   </div>
-                ))}
-              </div>
-            )}
-          </Field>
+                  <Popover
+                    open={editingCaption?.index === i}
+                    onOpenChange={(open) => {
+                      if (open) {
+                        setEditingCaption({ index: i, draft: photo.caption })
+                      } else if (editingCaption) {
+                        updateCaption(editingCaption.index, editingCaption.draft)
+                        setEditingCaption(null)
+                      }
+                    }}
+                  >
+                    <PopoverTrigger render={
+                      <Button type="button" variant="secondary" size="sm" className="font-sans-ui" />
+                    }>
+                      {photo.caption ? (
+                        <>
+                          <MdIcon name="check" size={14} />
+                          {dict.form.caption_added}
+                        </>
+                      ) : (
+                        dict.form.add_caption
+                      )}
+                    </PopoverTrigger>
+                    <PopoverContent className="w-56 p-2 font-sans-ui" align="center">
+                      <Input
+                        value={editingCaption?.draft ?? ''}
+                        onChange={(e) => setEditingCaption((prev) => prev ? { ...prev, draft: e.target.value } : null)}
+                        placeholder={dict.form.caption_placeholder}
+                        className="text-sm font-sans-ui"
+                        ref={(el) => el?.focus({ preventScroll: true })}
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+              ))}
+            </div>
+          </FormSection>
 
-        </FieldGroup>
+        </div>
 
         {error && <p className="text-sm text-destructive pt-4">{error}</p>}
       </div>
     </form>
-  )
-}
-
-/* ------------------------------------------------------------------ */
-/*  DetailActions — overflow menu for the recording detail page        */
-/* ------------------------------------------------------------------ */
-
-interface DetailActionsProps {
-  recordingId: string
-  editHref: string
-  labels: {
-    edit: string
-    delete: string
-    deleteTitle: string
-    deleteDescription: string
-    deleteConfirm: string
-    deletePending: string
-    cancel: string
-  }
-}
-
-export function DetailActions({
-  recordingId,
-  editHref,
-  labels,
-}: DetailActionsProps) {
-  const router = useRouter()
-  const [isPending, startTransition] = useTransition()
-  const [alertOpen, setAlertOpen] = useState(false)
-
-  function handleDelete() {
-    startTransition(async () => {
-      await deleteRecording(recordingId)
-      router.back()
-    })
-  }
-
-  return (
-    <>
-      <DropdownMenu>
-        <DropdownMenuTrigger
-          className={cn(
-            buttonVariants({ variant: 'ghost', size: 'icon-sm' }),
-            'cursor-pointer',
-          )}
-          aria-label="More options"
-        >
-          <MdIcon name="more_horiz" />
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" sideOffset={6} className="bg-neutral-100 font-sans-ui shadow-none ring-0">
-          <DropdownMenuItem disabled>
-            {labels.edit}
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem
-            variant="destructive"
-            onClick={() => setAlertOpen(true)}
-          >
-            {labels.delete}
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-
-      <AlertDialog open={alertOpen} onOpenChange={setAlertOpen}>
-        <AlertDialogContent className="font-sans-ui">
-          <AlertDialogHeader>
-            <AlertDialogTitle className="font-sans-ui">{labels.deleteTitle}</AlertDialogTitle>
-            <AlertDialogDescription>{labels.deleteDescription}</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel className="min-w-20">{labels.cancel}</AlertDialogCancel>
-            <AlertDialogAction
-              variant="destructive"
-              onClick={handleDelete}
-              disabled={isPending}
-              className="min-w-20"
-            >
-              {isPending ? labels.deletePending : labels.deleteConfirm}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </>
-  )
-}
-
-/* ------------------------------------------------------------------ */
-/*  BackButton — router.back() so URL params are preserved             */
-/* ------------------------------------------------------------------ */
-
-export function BackButton({ label, className }: { label: string; className?: string }) {
-  const router = useRouter()
-  return (
-    <button type="button" onClick={() => router.back()} className={className}>
-      {label}
-    </button>
   )
 }

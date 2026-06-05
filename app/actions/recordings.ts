@@ -1,6 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import { redirect } from 'next/navigation'
 import { auth } from '@/lib/auth'
 import { RecordingService } from '@/lib/services/RecordingService'
 import { Species } from '@/lib/models/Species'
@@ -32,7 +33,7 @@ export type RecordingPayload = {
   photos: { id: string; url: string; caption: string; width: number; height: number }[]
 }
 
-export async function createRecording(payload: RecordingPayload): Promise<{ id: string }> {
+export async function createRecording(payload: RecordingPayload, redirectTo: string): Promise<never> {
   const session = await auth()
   if (!session?.user?.id) throw new Error('Unauthorized')
 
@@ -60,7 +61,7 @@ export async function createRecording(payload: RecordingPayload): Promise<{ id: 
     payload.speciesKingdom as Kingdom,
   )
   const location = new Location(payload.locationPlaceName)
-  const recording = await RecordingService.create(session.user.id, {
+  await RecordingService.create(session.user.id, {
     species,
     date: new Date(payload.date),
     location,
@@ -68,12 +69,13 @@ export async function createRecording(payload: RecordingPayload): Promise<{ id: 
     notes: payload.notes,
   })
   revalidatePath('/')
-  return { id: recording.id }
+  redirect(redirectTo)
 }
 
-export async function deleteRecording(id: string): Promise<void> {
+export async function deleteRecording(id: string, redirectTo: string): Promise<never> {
   const session = await auth()
   if (!session?.user?.id) throw new Error('Unauthorized')
   await RecordingService.delete(session.user.id, id)
   revalidatePath('/')
+  redirect(redirectTo)
 }

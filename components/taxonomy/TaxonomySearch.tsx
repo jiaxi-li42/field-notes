@@ -1,15 +1,19 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
-import { SearchIcon } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { Button } from '@/components/ui/button'
+import { ButtonGroup, ButtonGroupText } from '@/components/ui/button-group'
 import {
   Command,
+  CommandDialog,
   CommandEmpty,
   CommandGroup,
+  CommandInput,
   CommandItem,
   CommandList,
 } from '@/components/ui/command'
-import { Input } from '@/components/ui/input'
+import { InputGroup, InputGroupAddon, InputGroupInput } from '@/components/ui/input-group'
+import { MdIcon } from '@/components/ui/MdIcon'
 import { cn } from '@/lib/utils'
 
 export type TaxonZh = {
@@ -39,16 +43,20 @@ export interface GBIFSuggestion {
 
 interface TaxonomySearchProps {
   placeholder: string
+  triggerLabel: string
   noResults: string
   searching: string
+  changeLabel: string
   onSelect: (suggestion: GBIFSuggestion) => void
   onClear: () => void
 }
 
 export function TaxonomySearch({
   placeholder,
+  triggerLabel,
   noResults,
   searching,
+  changeLabel,
   onSelect,
   onClear,
 }: TaxonomySearchProps) {
@@ -56,25 +64,15 @@ export function TaxonomySearch({
   const [results, setResults] = useState<GBIFSuggestion[]>([])
   const [loading, setLoading] = useState(false)
   const [open, setOpen] = useState(false)
-  const containerRef = useRef<HTMLDivElement>(null)
-  const justSelectedRef = useRef(false)
-  const onClearRef = useRef(onClear)
-  onClearRef.current = onClear
+  const [selectedItem, setSelectedItem] = useState<GBIFSuggestion | null>(null)
 
   // ── Search via GBIF ───────────────────────────────────────────────────────
   useEffect(() => {
-    if (justSelectedRef.current) {
-      justSelectedRef.current = false
-      return
-    }
     if (search.length < 2) {
       setResults([])
-      setOpen(false)
-      if (search.length === 0) onClearRef.current()
       return
     }
     setLoading(true)
-    setOpen(true)
     const abort = new AbortController()
     const timer = setTimeout(async () => {
       try {
@@ -93,24 +91,12 @@ export function TaxonomySearch({
     return () => { clearTimeout(timer); abort.abort() }
   }, [search])
 
-  // ── Click outside ─────────────────────────────────────────────────────────
-  useEffect(() => {
-    function handleClickOutside(e: MouseEvent) {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setOpen(false)
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [])
-
   // ── Select: emit immediately, then resolve zh name in background ──────────
   async function handleSelect(item: GBIFSuggestion) {
-    justSelectedRef.current = true
-    setSearch(item.vernacularName || item.canonicalName)
     setOpen(false)
-
-    // Emit with GBIF data right away
+    setSearch('')
+    setResults([])
+    setSelectedItem(item)
     onSelect(item)
 
     // Fetch zh vernacular name + zh taxonomy from iNaturalist in the background
@@ -131,60 +117,85 @@ export function TaxonomySearch({
     } catch { /* non-critical — zh data is optional */ }
   }
 
+  function handleReset() {
+    setSelectedItem(null)
+    setSearch('')
+    setResults([])
+    setOpen(false)
+    onClear()
+  }
+
   return (
-    <div ref={containerRef} className="relative">
-      <Command shouldFilter={false}>
-        <div className="relative">
-          <SearchIcon className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            onFocus={() => {
-              if (results.length > 0) setOpen(true)
-            }}
-            placeholder={placeholder}
-            className="pl-9"
-            autoComplete="off"
-          />
-        </div>
-        {open && (
-          <div
-            className={cn(
-              'absolute top-full left-0 right-0 z-50 mt-1 overflow-hidden rounded-lg border bg-popover shadow-md',
-            )}
-          >
-            <CommandList>
-              {loading && <CommandEmpty>{searching}</CommandEmpty>}
-              {!loading && results.length === 0 && (
-                <CommandEmpty>{noResults}</CommandEmpty>
+    <>
+      {selectedItem ? (
+        <ButtonGroup className="w-full">
+          <ButtonGroupText className="flex-1 min-w-0 px-4 py-2 font-sans-ui">
+            <div className="flex flex-col flex-1 gap-0.5 min-w-0">
+              {selectedItem.vernacularName ? (
+                <>
+                  <span className="truncate">{selectedItem.vernacularName}</span>
+                  <span className="text-xs text-muted-foreground italic font-normal truncate">{selectedItem.canonicalName}</span>
+                </>
+              ) : (
+                <span className="italic font-normal truncate">{selectedItem.canonicalName}</span>
               )}
-              <CommandGroup>
-                {results.map((item) => (
-                  <CommandItem
-                    key={item.key}
-                    value={String(item.key)}
-                    onSelect={() => handleSelect(item)}
-                  >
-                    <div className="flex flex-col">
-                      {item.vernacularName && (
-                        <span className="font-medium">{item.vernacularName}</span>
-                      )}
-                      <span className={cn('italic', item.vernacularName ? 'text-xs text-muted-foreground' : 'font-medium')}>
-                        {item.canonicalName}
-                      </span>
-                    </div>
-                    {item.kingdom && (
-                      <span className="ml-auto self-start text-xs text-muted-foreground">
-                        {item.kingdom}
-                      </span>
+            </div>
+          </ButtonGroupText>
+          <Button type="button" variant="outline" onClick={handleReset} className="h-auto hover:bg-accent font-sans-ui">
+            {changeLabel}
+          </Button>
+        </ButtonGroup>
+      ) : (
+        <InputGroup onClick={() => setOpen(true)} className="cursor-pointer">
+          <InputGroupAddon>
+            <MdIcon name="globe_book" size={20} />
+          </InputGroupAddon>
+          <InputGroupInput
+            readOnly
+            placeholder={triggerLabel}
+            className="text-sm font-sans-ui cursor-pointer"
+          />
+        </InputGroup>
+      )}
+      <CommandDialog open={open} onOpenChange={setOpen} className="font-sans-ui">
+        <Command shouldFilter={false}>
+          <CommandInput
+            value={search}
+            onValueChange={setSearch}
+            placeholder={placeholder}
+          />
+          <CommandList className="hide-scrollbar">
+            {loading && <CommandEmpty className="text-muted-foreground">{searching}</CommandEmpty>}
+            {!loading && search.length >= 2 && results.length === 0 && (
+              <CommandEmpty className="text-muted-foreground">{noResults}</CommandEmpty>
+            )}
+            <CommandGroup className="font-sans-ui">
+              {results.map((item) => (
+                <CommandItem
+                  key={item.key}
+                  value={String(item.key)}
+                  onSelect={() => handleSelect(item)}
+                  className="items-start"
+                >
+                  <div className="flex flex-col flex-1 min-w-0">
+                    {item.vernacularName && (
+                      <span className="font-medium truncate">{item.vernacularName}</span>
                     )}
-                  </CommandItem>
-                ))}
-              </CommandGroup>
-            </CommandList>
-          </div>
-        )}
-      </Command>
-    </div>
+                    <span className={cn('italic truncate', item.vernacularName ? 'text-xs text-muted-foreground' : 'font-normal')}>
+                      {item.canonicalName}
+                    </span>
+                  </div>
+                  {item.kingdom && (
+                    <span className="shrink-0 text-sm text-muted-foreground">
+                      {item.kingdom}
+                    </span>
+                  )}
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </CommandDialog>
+    </>
   )
 }

@@ -151,6 +151,21 @@
   z-index: 10;
 }
 
+/* Hide all scrollbars — native, webkit, and OverlayScrollbars — within
+   an element marked .hide-scrollbar. Used by TaxonomySearch Command list. */
+.hide-scrollbar,
+.hide-scrollbar * {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+.hide-scrollbar::-webkit-scrollbar,
+.hide-scrollbar *::-webkit-scrollbar {
+  display: none !important;
+}
+.hide-scrollbar .os-scrollbar {
+  display: none !important;
+}
+
 @layer utilities {
   /* Postage-stamp perforated border using CSS mask.
      --r is the sole control: larger = bigger holes and more spacing between them.
