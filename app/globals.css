@@ -5,7 +5,7 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-nanum);
+  --font-sans: var(--font-nanum), var(--font-source-han), serif;
   --font-sans-ui: var(--font-geist);
   --font-mono: var(--font-geist-mono);
   --font-heading: var(--font-sans);
@@ -146,6 +146,37 @@
      The page background shows through the holes automatically — no colour coupling. */
   .stamp-card {
     --r: 8px;
+    background-color: white;
+    padding: var(--r);
+    mask:
+      radial-gradient(50% 50%, #0000 66%, #000 67%) round
+        var(--r) var(--r)/calc(2*var(--r)) calc(2*var(--r)),
+      conic-gradient(#000 0 0) content-box;
+  }
+
+  /* Stamp perforations on top edge only. Element must bring its own bg. */
+  .stamp-card-top {
+    --r: 8px;
+    padding-top: var(--r);
+    mask:
+      radial-gradient(50% 50%, #0000 66%, #000 67%) round
+        var(--r) var(--r)/calc(2*var(--r)) calc(2*var(--r)),
+      conic-gradient(#000 0 0) content-box;
+  }
+
+  /* Stamp perforations on bottom edge only. Element must bring its own bg. */
+  .stamp-card-bottom {
+    --r: 8px;
+    padding-bottom: var(--r);
+    mask:
+      radial-gradient(50% 50%, #0000 66%, #000 67%) round
+        var(--r) var(--r)/calc(2*var(--r)) calc(2*var(--r)),
+      conic-gradient(#000 0 0) content-box;
+  }
+
+  /* Larger stamp holes for the circle view cards */
+  .stamp-card-lg {
+    --r: 12px;
     background-color: white;
     padding: var(--r);
     mask:

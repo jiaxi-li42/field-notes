@@ -81,6 +81,8 @@ export function PhotoCarousel({ photos }: PhotoProps) {
                 <img
                   src={photo.url}
                   alt={photo.caption}
+                  width={photo.width}
+                  height={photo.height}
                   onClick={() => setLightbox({ url: photo.url, caption: photo.caption })}
                   className="w-full aspect-square object-cover cursor-pointer"
                 />
@@ -145,6 +147,9 @@ export function PhotoGrid({ photos }: PhotoProps) {
             <img
               src={photo.url}
               alt={photo.caption}
+              width={photo.width}
+              height={photo.height}
+              loading="lazy"
               className={`w-full object-cover ${landscape ? 'aspect-[4/3]' : square ? 'aspect-square' : 'aspect-[3/4]'}`}
             />
             <CaptionIcon caption={photo.caption} />

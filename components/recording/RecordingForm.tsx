@@ -25,7 +25,6 @@ import { createRecording, updateRecording } from '@/app/actions/recordings'
 import { formatDate } from '@/lib/utils/date'
 import { cn } from '@/lib/utils'
 import { langPrefix } from '@/lib/utils/i18n'
-import type { Kingdom } from '@/lib/models/Species'
 import type { Dictionary } from '@/lib/i18n/dictionaries'
 import { PHOTO_ROTATIONS } from '@/lib/utils/photo'
 
@@ -52,7 +51,8 @@ function readDimensions(src: string): Promise<{ width: number; height: number }>
 /* ------------------------------------------------------------------ */
 
 const fieldLabelClass = 'text-xs font-bold text-muted-foreground lowercase'
-const fieldInputClass = 'h-8 text-sm'
+const fieldInputClass = 'h-8 text-sm rounded-none border-0 border-b border-input focus-visible:ring-0 focus-visible:border-ring'
+const fieldInputItalic = cn(fieldInputClass, 'italic')
 
 function FormSection({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -313,24 +313,49 @@ export function RecordingForm({ lang, dict, initialData }: RecordingFormProps) {
 
       {/* Content */}
       <div className="mx-auto max-w-sm md:max-w-2xl px-4 pt-16 pb-4">
-        <div className="divide-y divide-border">
+        <div>
 
           {/* Species */}
           <FormSection label={dict.recording.species}>
-            <TaxonomySearch
-              placeholder={dict.form.species_placeholder}
-              triggerLabel={dict.form.species_trigger}
-              noResults={dict.form.no_results}
-              searching={dict.form.searching}
-              changeLabel={dict.form.change}
-              onSelect={(s) => setSelectedSpecies(s)}
-              onClear={() => {
-                setSelectedSpecies(null)
-                setManualTaxonomy(false)
-              }}
-              initialSelected={initialData?.species}
-              showReset={!isEdit}
-            />
+            <div>
+              <TaxonomySearch
+                placeholder={dict.form.species_placeholder}
+                triggerLabel={dict.form.species_trigger}
+                noResults={dict.form.no_results}
+                searching={dict.form.searching}
+                changeLabel={dict.form.change}
+                onSelect={(s) => setSelectedSpecies(s)}
+                onClear={() => {
+                  setSelectedSpecies(null)
+                  setManualTaxonomy(false)
+                }}
+                initialSelected={initialData?.species}
+                showReset={!isEdit}
+              />
+
+              {/* Selected species display */}
+              {selectedSpecies && (() => {
+                const vernacular = lang === 'zh' ? selectedSpecies.vernacularNameZh : selectedSpecies.vernacularName
+                return (
+                  <div className={cn('stamp-card-bottom bg-neutral-100', isEdit && 'stamp-card-top')}>
+                    {!isEdit && <div className="border-t border-dashed border-border" />}
+                    <div className="flex items-start justify-between gap-4 px-4 py-4">
+                      <div className="flex flex-col gap-0.5 min-w-0">
+                        <span className="text-2xl font-bold tracking-tight font-sans">
+                          {vernacular || selectedSpecies.canonicalName}
+                        </span>
+                        {vernacular && (
+                          <span className="text-sm text-muted-foreground font-sans-ui italic">{selectedSpecies.canonicalName}</span>
+                        )}
+                      </div>
+                      {selectedSpecies.kingdom && (
+                        <span className="shrink-0 text-sm text-muted-foreground">{selectedSpecies.kingdom}</span>
+                      )}
+                    </div>
+                  </div>
+                )
+              })()}
+            </div>
 
             {/* Choice Card — auto-fill vs manual (create mode only) */}
             {!isEdit && selectedSpecies && (
@@ -387,7 +412,7 @@ export function RecordingForm({ lang, dict, initialData }: RecordingFormProps) {
                   <Input
                     value={nameFields.scientific}
                     onChange={(e) => setNameFields((prev) => ({ ...prev, scientific: e.target.value }))}
-                    className={cn(fieldInputClass, 'italic')}
+                    className={fieldInputItalic}
                   />
                 </LabeledField>
                 {(['kingdom', 'phylum', 'class', 'order', 'family', 'genus', 'species'] as const).map((rank) => (
@@ -402,7 +427,7 @@ export function RecordingForm({ lang, dict, initialData }: RecordingFormProps) {
                     <Input
                       value={taxonFields[rank]}
                       onChange={(e) => setTaxonFields((prev) => ({ ...prev, [rank]: e.target.value }))}
-                      className={cn(fieldInputClass, 'italic')}
+                      className={fieldInputItalic}
                     />
                   </LabeledField>
                 ))}
@@ -416,7 +441,7 @@ export function RecordingForm({ lang, dict, initialData }: RecordingFormProps) {
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               placeholder={dict.form.notes_placeholder}
-              className="text-sm"
+              className={fieldInputClass}
               rows={4}
             />
           </FormSection>
@@ -450,7 +475,7 @@ export function RecordingForm({ lang, dict, initialData }: RecordingFormProps) {
               value={location}
               onChange={(e) => setLocation(e.target.value)}
               placeholder={dict.form.location_placeholder}
-              className="text-sm"
+              className={fieldInputClass}
             />
           </FormSection>
 
@@ -471,8 +496,7 @@ export function RecordingForm({ lang, dict, initialData }: RecordingFormProps) {
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={uploading || uploadedPhotos.length >= 10}
-                className="flex aspect-square flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed border-border text-sm text-muted-foreground transition-colors hover:border-ring hover:text-foreground disabled:pointer-events-none disabled:opacity-50"
-              >
+                className="flex aspect-square flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed border-border text-sm text-muted-foreground transition-colors hover:border-ring hover:text-foreground disabled:pointer-events-none disabled:opacity-50"              >
                 <MdIcon name="note_stack_add" size={24} />
                 <span>{uploading ? dict.actions.uploading : dict.header.add}</span>
               </button>
@@ -536,6 +560,7 @@ export function RecordingForm({ lang, dict, initialData }: RecordingFormProps) {
                       <Input
                         value={captionDraft}
                         onChange={(e) => setCaptionDraft(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); updateCaption(i, captionDraft); setCaptionPopoverIndex(null) } }}
                         placeholder={dict.form.caption_placeholder}
                         className="text-sm"
                         ref={(el) => el?.focus({ preventScroll: true })}

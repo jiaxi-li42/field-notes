@@ -30,6 +30,9 @@ export function StampCard({ recording, lang, href, rotate = 0 }: StampCardProps)
               <img
                 src={photo.url}
                 alt={displayName}
+                width={photo.width}
+                height={photo.height}
+                loading="lazy"
                 className="h-full w-full object-cover"
               />
             )}

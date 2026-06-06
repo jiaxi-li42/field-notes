@@ -571,15 +571,20 @@ export function CollectionView({
 
               const isFocused = zoomed && focusedIdx === i
               const imageContent = (
-                <div className="h-full w-full overflow-hidden bg-neutral-200">
-                  {card.photoUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={card.photoUrl}
-                      alt={card.displayName}
-                      className="h-full w-full object-cover"
-                    />
-                  ) : null}
+                <div className={cn('h-full w-full', zoomed && 'stamp-card-lg')}>
+                  <div className={cn('h-full w-full', zoomed && 'p-2')}>
+                    <div className="h-full w-full overflow-hidden bg-neutral-200">
+                      {card.photoUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={card.photoUrl}
+                          alt={card.displayName}
+                          loading="lazy"
+                          className="h-full w-full object-cover"
+                        />
+                      ) : null}
+                    </div>
+                  </div>
                 </div>
               )
 

@@ -1,5 +1,5 @@
 import 'server-only'
-import { eq, desc, inArray } from 'drizzle-orm'
+import { eq, and, desc, inArray } from 'drizzle-orm'
 import { db } from '@/lib/db'
 import { recordings, photos } from '@/lib/db/schema'
 import { Recording } from '@/lib/models/Recording'
@@ -122,12 +122,12 @@ export class RecordingService {
 
     if (rows.length === 0) return []
 
-    // Batch: single query for all photos instead of N+1
+    // Batch: single query for first photo per recording (thumbnail only)
     const recordingIds = rows.map((r) => r.id)
     const allPhotos = await db
       .select()
       .from(photos)
-      .where(inArray(photos.recordingId, recordingIds))
+      .where(and(inArray(photos.recordingId, recordingIds), eq(photos.sortOrder, 0)))
 
     const photosByRecording = new Map<string, PhotoRow[]>()
     for (const p of allPhotos) {

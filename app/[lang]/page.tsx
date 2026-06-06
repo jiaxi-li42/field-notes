@@ -7,17 +7,11 @@ import { CollectionHeader } from '@/components/collection/CollectionHeader'
 import { CollectionView } from '@/components/collection/CollectionView'
 import { Empty, EmptyHeader, EmptyTitle, EmptyDescription } from '@/components/ui/empty'
 import type { Kingdom } from '@/lib/models/Species'
-import type { Recording } from '@/lib/models/Recording'
 import { langPrefix } from '@/lib/utils/i18n'
 
 // Pseudo-random scatter angles (degrees). Cycle through these per card position.
 const STAMP_ROTATIONS = [-2.3, 1.8, -1.2, 2.7, -0.7, 1.4, -2.1, 0.9, -1.6, 2.4, -0.4, 1.1]
 
-function chunkBy<T>(arr: T[], n: number): T[][] {
-  const out: T[][] = []
-  for (let i = 0; i < arr.length; i += n) out.push(arr.slice(i, i + n))
-  return out
-}
 
 export default async function HomePage({
   params,
@@ -73,10 +67,6 @@ export default async function HomePage({
   const gridRecordings = activeKingdoms.length > 0
     ? recordings.filter((r) => activeKingdoms.includes(r.species.kingdom))
     : recordings
-
-  // Server-side row chunking per breakpoint so divide-y separators land correctly
-  const mobileRows = chunkBy(gridRecordings, 3)   // 3-col layout
-  const desktopRows = chunkBy(gridRecordings, 5)  // 5-col layout
 
   // Slim serialisable data for the client-side circle view
   const circleData = recordings.map((r) => ({
@@ -138,41 +128,17 @@ export default async function HomePage({
               </EmptyHeader>
             </Empty>
           ) : (
-            <>
-              {/* ── Mobile: 3 columns ───────────────────────────────────────── */}
-              <div className="md:hidden divide-y divide-neutral-200">
-                {mobileRows.map((row, rowIdx) => (
-                  <div key={rowIdx} className="grid grid-cols-3 gap-x-2 gap-y-4 p-4">
-                    {row.map((r: Recording, colIdx) => (
-                      <StampCard
-                        key={r.id}
-                        recording={r}
-                        lang={lang}
-                        href={`${basePath}/collection/${r.id}`}
-                        rotate={STAMP_ROTATIONS[(rowIdx * 3 + colIdx) % STAMP_ROTATIONS.length]}
-                      />
-                    ))}
-                  </div>
-                ))}
-              </div>
-
-              {/* ── Desktop: 5 columns ──────────────────────────────────────── */}
-              <div className="hidden md:block divide-y divide-neutral-200">
-                {desktopRows.map((row, rowIdx) => (
-                  <div key={rowIdx} className="grid grid-cols-5 gap-x-2 gap-y-4 p-4">
-                    {row.map((r: Recording, colIdx) => (
-                      <StampCard
-                        key={r.id}
-                        recording={r}
-                        lang={lang}
-                        href={`${basePath}/collection/${r.id}`}
-                        rotate={STAMP_ROTATIONS[(rowIdx * 5 + colIdx) % STAMP_ROTATIONS.length]}
-                      />
-                    ))}
-                  </div>
-                ))}
-              </div>
-            </>
+            <div className="grid grid-cols-3 md:grid-cols-5 gap-x-2 gap-y-4 p-4">
+              {gridRecordings.map((r, i) => (
+                <StampCard
+                  key={r.id}
+                  recording={r}
+                  lang={lang}
+                  href={`${basePath}/collection/${r.id}`}
+                  rotate={STAMP_ROTATIONS[i % STAMP_ROTATIONS.length]}
+                />
+              ))}
+            </div>
           )}
         </CollectionView>
       </div>

@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
   const key = `photos/${session.user.id}/${id}.webp`
 
   try {
-    const raw = Buffer.from(await file.arrayBuffer())
+    const raw = new Uint8Array(await file.arrayBuffer())
     const buffer = file.type === 'image/webp'
       ? raw
       : await sharp(raw).webp({ quality: 80 }).toBuffer()

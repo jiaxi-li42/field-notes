@@ -1,8 +1,6 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Button } from '@/components/ui/button'
-import { ButtonGroup, ButtonGroupText } from '@/components/ui/button-group'
 import {
   Command,
   CommandDialog,
@@ -12,7 +10,6 @@ import {
   CommandItem,
   CommandList,
 } from '@/components/ui/command'
-import { InputGroup, InputGroupAddon, InputGroupInput } from '@/components/ui/input-group'
 import { MdIcon } from '@/components/ui/MdIcon'
 import { cn } from '@/lib/utils'
 
@@ -131,37 +128,17 @@ export function TaxonomySearch({
 
   return (
     <>
-      {selectedItem ? (
-        <ButtonGroup className="w-full">
-          <ButtonGroupText className="flex-1 min-w-0 px-4 py-2 font-sans-ui">
-            <div className="flex flex-col flex-1 gap-0.5 min-w-0">
-              {selectedItem.vernacularName ? (
-                <>
-                  <span className="truncate">{selectedItem.vernacularName}</span>
-                  <span className="text-xs text-muted-foreground italic font-normal truncate">{selectedItem.canonicalName}</span>
-                </>
-              ) : (
-                <span className="italic font-normal truncate">{selectedItem.canonicalName}</span>
-              )}
-            </div>
-          </ButtonGroupText>
-          {showReset && (
-            <Button type="button" variant="outline" onClick={handleReset} className="h-auto hover:bg-accent font-sans-ui">
-              {changeLabel}
-            </Button>
-          )}
-        </ButtonGroup>
-      ) : (
-        <InputGroup onClick={() => setOpen(true)} className="cursor-pointer">
-          <InputGroupAddon>
-            <MdIcon name="globe_book" size={20} />
-          </InputGroupAddon>
-          <InputGroupInput
-            readOnly
-            placeholder={triggerLabel}
-            className="text-sm font-sans-ui cursor-pointer"
-          />
-        </InputGroup>
+      {(!selectedItem || showReset) && (
+        <button
+          type="button"
+          onClick={selectedItem ? handleReset : () => setOpen(true)}
+          className="stamp-card-top w-full bg-neutral-100 font-sans transition-colors hover:bg-neutral-200"
+        >
+          <span className="flex items-center justify-center gap-2 py-4 text-sm font-bold">
+            <MdIcon name={selectedItem ? 'refresh' : 'arrow_outward'} size={18} />
+            <span>{selectedItem ? changeLabel : triggerLabel}</span>
+          </span>
+        </button>
       )}
       <CommandDialog open={open} onOpenChange={setOpen} className="font-sans-ui">
         <Command shouldFilter={false}>
@@ -175,30 +152,32 @@ export function TaxonomySearch({
             {!loading && search.length >= 2 && results.length === 0 && (
               <CommandEmpty className="text-muted-foreground">{noResults}</CommandEmpty>
             )}
-            <CommandGroup className="font-sans-ui">
-              {results.map((item) => (
-                <CommandItem
-                  key={item.key}
-                  value={String(item.key)}
-                  onSelect={() => handleSelect(item)}
-                  className="items-start"
-                >
-                  <div className="flex flex-col flex-1 min-w-0">
-                    {item.vernacularName && (
-                      <span className="font-medium truncate">{item.vernacularName}</span>
+            {results.length > 0 && (
+              <CommandGroup className="font-sans-ui">
+                {results.map((item) => (
+                  <CommandItem
+                    key={item.key}
+                    value={String(item.key)}
+                    onSelect={() => handleSelect(item)}
+                    className="items-start"
+                  >
+                    <div className="flex flex-col flex-1 min-w-0">
+                      {item.vernacularName && (
+                        <span className="font-medium truncate">{item.vernacularName}</span>
+                      )}
+                      <span className={cn('italic truncate', item.vernacularName ? 'text-xs text-muted-foreground' : 'font-normal')}>
+                        {item.canonicalName}
+                      </span>
+                    </div>
+                    {item.kingdom && (
+                      <span className="shrink-0 text-sm text-muted-foreground">
+                        {item.kingdom}
+                      </span>
                     )}
-                    <span className={cn('italic truncate', item.vernacularName ? 'text-xs text-muted-foreground' : 'font-normal')}>
-                      {item.canonicalName}
-                    </span>
-                  </div>
-                  {item.kingdom && (
-                    <span className="shrink-0 text-sm text-muted-foreground">
-                      {item.kingdom}
-                    </span>
-                  )}
-                </CommandItem>
-              ))}
-            </CommandGroup>
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            )}
           </CommandList>
         </Command>
       </CommandDialog>
