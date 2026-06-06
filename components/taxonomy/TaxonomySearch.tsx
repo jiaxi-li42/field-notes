@@ -138,6 +138,7 @@ export function TaxonomySearch({
             <MdIcon name={selectedItem ? 'refresh' : 'arrow_outward'} size={18} />
             <span>{selectedItem ? changeLabel : triggerLabel}</span>
           </span>
+          <div className="border-b border-dashed border-border" />
         </button>
       )}
       <CommandDialog open={open} onOpenChange={setOpen} className="font-sans-ui">

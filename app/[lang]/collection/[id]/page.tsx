@@ -4,20 +4,14 @@ import { getDictionary } from '@/lib/i18n/dictionaries'
 import { RecordingService } from '@/lib/services/RecordingService'
 import { buttonVariants } from '@/components/ui/button'
 import { PhotoCarousel, PhotoGrid } from '@/components/recording/PhotoGrid'
-import { DetailActions, BackButton } from '@/components/recording/DetailActions'
+import { DetailActions } from '@/components/recording/DetailActions'
+import { BackButton } from '@/components/shell/BackButton'
+import { PageHeader } from '@/components/shell/PageHeader'
 import { formatDate } from '@/lib/utils/date'
 import { cn } from '@/lib/utils'
 import { langPrefix } from '@/lib/utils/i18n'
 import { buildTaxonRows } from '@/lib/utils/taxonomy'
-
-function Section({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div className="py-4 md:grid md:grid-cols-3">
-      <dt className="mb-2 md:mb-0 text-xs text-muted-foreground font-bold lowercase">{label}</dt>
-      <dd className="text-sm font-sans-ui md:col-span-2">{children}</dd>
-    </div>
-  )
-}
+import { Section } from '@/components/shell/Section'
 
 export default async function RecordingDetailPage({
   params,
@@ -48,29 +42,30 @@ export default async function RecordingDetailPage({
 
   return (
     <main className="min-h-screen bg-white">
-      {/* Header — fixed */}
-      <header className="fixed left-0 right-0 top-0 z-50 bg-white">
-        <div className="mx-auto flex max-w-sm md:max-w-2xl items-center justify-between p-4">
+      <PageHeader
+        left={
           <BackButton
             label={dict.detail.return}
             className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }), 'px-2 lowercase')}
           />
+        }
+        right={
           <DetailActions
-          recordingId={id}
-          redirectTo={base}
-          editHref={`${base === '/' ? '' : base}/collection/${id}/edit`}
-          labels={{
-            edit: dict.detail.edit,
-            delete: dict.actions.delete,
-            deleteTitle: dict.detail.delete_title,
-            deleteDescription: dict.detail.delete_description,
-            deleteConfirm: dict.detail.delete_confirm,
-            deletePending: dict.detail.delete_pending,
-            cancel: dict.actions.cancel,
-          }}
-        />
-        </div>
-      </header>
+            recordingId={id}
+            redirectTo={base}
+            editHref={`${base === '/' ? '' : base}/collection/${id}/edit`}
+            labels={{
+              edit: dict.detail.edit,
+              delete: dict.actions.delete,
+              deleteTitle: dict.detail.delete_title,
+              deleteDescription: dict.detail.delete_description,
+              deleteConfirm: dict.detail.delete_confirm,
+              deletePending: dict.detail.delete_pending,
+              cancel: dict.actions.cancel,
+            }}
+          />
+        }
+      />
 
       {/* Mobile carousel — full width, at top */}
       {photos.length > 0 && (
@@ -94,7 +89,7 @@ export default async function RecordingDetailPage({
         </div>
 
         {/* Sections */}
-        <dl className="divide-y divide-border">
+        <div className="divide-y divide-border">
           <Section label={dict.detail.taxonomy}>
             {taxonRows.map(([label, value, italic]) => (
               <p key={label}>
@@ -122,7 +117,7 @@ export default async function RecordingDetailPage({
               {location.placeName}
             </Section>
           )}
-        </dl>
+        </div>
 
         {/* Desktop photos — at bottom */}
         {photos.length > 0 && (

@@ -29,10 +29,7 @@ const sourceHanSerifCN = localFont({
   weight: "100 900",
 });
 
-export const metadata: Metadata = {
-  title: "Field Notes",
-  description: "A species recording log",
-};
+export const metadata: Metadata = {};
 
 export const viewport: Viewport = {
   width: "device-width",

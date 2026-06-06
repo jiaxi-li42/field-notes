@@ -108,16 +108,3 @@ export function DetailActions({
     </>
   )
 }
-
-/* ------------------------------------------------------------------ */
-/*  BackButton — router.back() so URL params are preserved             */
-/* ------------------------------------------------------------------ */
-
-export function BackButton({ label, className }: { label: string; className?: string }) {
-  const router = useRouter()
-  return (
-    <button type="button" onClick={() => router.back()} className={className}>
-      {label}
-    </button>
-  )
-}

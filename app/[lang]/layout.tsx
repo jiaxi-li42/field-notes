@@ -1,9 +1,20 @@
 import { notFound } from 'next/navigation'
+import type { Metadata } from 'next'
 
 const locales = ['en', 'zh'] as const
 
+const meta: Record<string, { title: string; description: string }> = {
+  en: { title: 'The Dandelion — Your nature field notes', description: 'Observe, record, and share the nature around you.' },
+  zh: { title: '蒲公英 — 你的自然观察笔记', description: '观察，记录，分享你眼中的自然。' },
+}
+
 export async function generateStaticParams() {
   return locales.map((lang) => ({ lang }))
+}
+
+export async function generateMetadata({ params }: { params: Promise<{ lang: string }> }): Promise<Metadata> {
+  const { lang } = await params
+  return meta[lang] ?? meta.en
 }
 
 export default async function LangLayout({

@@ -11,6 +11,7 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu'
+import { PageHeader } from '@/components/shell/PageHeader'
 import { cn } from '@/lib/utils'
 import type { Dictionary } from '@/lib/i18n/dictionaries'
 import { langPrefix } from '@/lib/utils/i18n'
@@ -25,9 +26,9 @@ export function CollectionHeader({ lang, dict }: CollectionHeaderProps) {
   const addHref = `${prefix}/collection/new`
 
   return (
-    <header className="fixed left-0 right-0 top-0 z-50 bg-neutral-100">
-      <div className="mx-auto flex max-w-sm md:max-w-2xl items-center justify-between px-4 py-6">
-        {/* Left -- title + overflow menu */}
+    <PageHeader
+      bg="bg-neutral-100"
+      left={
         <div className="flex items-center gap-1">
           <h1 className="text-2xl tracking-tight">{dict.nav.collection}</h1>
 
@@ -59,9 +60,9 @@ export function CollectionHeader({ lang, dict }: CollectionHeaderProps) {
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
-
-        {/* Right -- search + add */}
-        <div className="flex items-center gap-1">
+      }
+      right={
+        <>
           <Button variant="ghost" size="sm" className="gap-1 px-2 lowercase" disabled aria-label="Search">
             <MdIcon name="search" />
             {dict.header.search}
@@ -69,8 +70,8 @@ export function CollectionHeader({ lang, dict }: CollectionHeaderProps) {
           <Link href={addHref} className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }), 'px-2 lowercase')}>
             {dict.header.add}
           </Link>
-        </div>
-      </div>
-    </header>
+        </>
+      }
+    />
   )
 }

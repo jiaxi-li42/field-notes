@@ -21,6 +21,8 @@ import {
 } from '@/components/ui/field'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { TaxonomySearch, type GBIFSuggestion } from '@/components/taxonomy/TaxonomySearch'
+import { PageHeader } from '@/components/shell/PageHeader'
+import { Section } from '@/components/shell/Section'
 import { createRecording, updateRecording } from '@/app/actions/recordings'
 import { formatDate } from '@/lib/utils/date'
 import { cn } from '@/lib/utils'
@@ -50,18 +52,8 @@ function readDimensions(src: string): Promise<{ width: number; height: number }>
 /*  FieldLabel style override — match detail page section labels       */
 /* ------------------------------------------------------------------ */
 
-const fieldLabelClass = 'text-xs font-bold text-muted-foreground lowercase'
 const fieldInputClass = 'h-8 text-sm rounded-none border-0 border-b border-input focus-visible:ring-0 focus-visible:border-ring'
 const fieldInputItalic = cn(fieldInputClass, 'italic')
-
-function FormSection({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div className="py-4 md:grid md:grid-cols-3">
-      <span className={cn(fieldLabelClass, 'block mb-2 md:mb-0')}>{label}</span>
-      <div className="flex flex-col gap-2 md:col-span-2 font-sans-ui">{children}</div>
-    </div>
-  )
-}
 
 function LabeledField({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -283,14 +275,10 @@ export function RecordingForm({ lang, dict, initialData }: RecordingFormProps) {
 
   return (
     <form onSubmit={handleSubmit} noValidate onClick={() => setActivePhotoIndex(null)}>
-      {/* Header — fixed */}
-      <header className="fixed left-0 right-0 top-0 z-50">
-        <div className="mx-auto flex max-w-sm md:max-w-2xl items-center justify-between px-4 py-6 bg-white">
-          {/* Left — title */}
-          <h1 className="text-2xl tracking-tight">{isEdit ? dict.nav.edit : dict.nav.new}</h1>
-
-          {/* Right — cancel + save */}
-          <div className="flex items-center gap-1">
+      <PageHeader
+        left={<h1 className="text-2xl tracking-tight">{isEdit ? dict.nav.edit : dict.nav.new}</h1>}
+        right={
+          <>
             <button
               type="button"
               onClick={() => router.back()}
@@ -307,16 +295,16 @@ export function RecordingForm({ lang, dict, initialData }: RecordingFormProps) {
             >
               {isPending ? dict.actions.saving : dict.actions.save}
             </Button>
-          </div>
-        </div>
-      </header>
+          </>
+        }
+      />
 
       {/* Content */}
       <div className="mx-auto max-w-sm md:max-w-2xl px-4 pt-16 pb-4">
         <div>
 
           {/* Species */}
-          <FormSection label={dict.recording.species}>
+          <Section form label={dict.recording.species}>
             <div>
               <TaxonomySearch
                 placeholder={dict.form.species_placeholder}
@@ -338,7 +326,6 @@ export function RecordingForm({ lang, dict, initialData }: RecordingFormProps) {
                 const vernacular = lang === 'zh' ? selectedSpecies.vernacularNameZh : selectedSpecies.vernacularName
                 return (
                   <div className={cn('stamp-card-bottom bg-neutral-100', isEdit && 'stamp-card-top')}>
-                    {!isEdit && <div className="border-t border-dashed border-border" />}
                     <div className="flex items-start justify-between gap-4 px-4 py-4">
                       <div className="flex flex-col gap-0.5 min-w-0">
                         <span className="text-2xl font-bold tracking-tight font-sans">
@@ -433,10 +420,10 @@ export function RecordingForm({ lang, dict, initialData }: RecordingFormProps) {
                 ))}
               </div>
             )}
-          </FormSection>
+          </Section>
 
           {/* Notes */}
-          <FormSection label={dict.recording.notes}>
+          <Section form label={dict.recording.notes}>
             <Textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
@@ -444,10 +431,10 @@ export function RecordingForm({ lang, dict, initialData }: RecordingFormProps) {
               className={fieldInputClass}
               rows={4}
             />
-          </FormSection>
+          </Section>
 
           {/* Date Added */}
-          <FormSection label={dict.detail.date_added}>
+          <Section form label={dict.detail.date_added}>
             <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
               <PopoverTrigger render={
                 <Button variant="outline" className="w-full justify-between text-left font-normal" />
@@ -467,20 +454,20 @@ export function RecordingForm({ lang, dict, initialData }: RecordingFormProps) {
                 />
               </PopoverContent>
             </Popover>
-          </FormSection>
+          </Section>
 
           {/* Observed Location */}
-          <FormSection label={dict.detail.observed_location}>
+          <Section form label={dict.detail.observed_location}>
             <Input
               value={location}
               onChange={(e) => setLocation(e.target.value)}
               placeholder={dict.form.location_placeholder}
               className={fieldInputClass}
             />
-          </FormSection>
+          </Section>
 
           {/* Photos */}
-          <FormSection label={dict.recording.photos}>
+          <Section form label={dict.recording.photos}>
             <span className="text-sm text-muted-foreground">{dict.form.photos_hint}</span>
             <input
               ref={fileInputRef}
@@ -570,7 +557,7 @@ export function RecordingForm({ lang, dict, initialData }: RecordingFormProps) {
                 </div>
               ))}
             </div>
-          </FormSection>
+          </Section>
 
         </div>
 
