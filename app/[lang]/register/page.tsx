@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { auth } from '@/lib/auth'
 import { getDictionary } from '@/lib/i18n/dictionaries'
+import { AuthLayout } from '@/components/auth/AuthLayout'
 import { RegisterForm } from '@/components/auth/RegisterForm'
 import { langPrefix } from '@/lib/utils/i18n'
 
@@ -16,11 +17,8 @@ export default async function RegisterPage({
   const dict = await getDictionary(lang)
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-neutral-100 px-4">
-      <div className="w-full max-w-sm space-y-6">
-        <h1 className="text-center text-2xl tracking-tight">{dict.auth.register}</h1>
-        <RegisterForm lang={lang} dict={dict.auth} />
-      </div>
-    </main>
+    <AuthLayout title={dict.auth.register_title} subtitle={dict.auth.register_subtitle}>
+      <RegisterForm lang={lang} dict={dict.auth} />
+    </AuthLayout>
   )
 }

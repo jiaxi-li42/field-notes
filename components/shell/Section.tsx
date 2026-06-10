@@ -13,9 +13,9 @@ interface SectionProps {
  */
 export function Section({ label, form, children }: SectionProps) {
   return (
-    <div className="py-4 md:grid md:grid-cols-3">
+    <div className="pt-4 py-8 md:grid md:grid-cols-3">
       <span className="block mb-2 md:mb-0 text-xs font-bold text-muted-foreground lowercase">{label}</span>
-      <div className={cn('text-sm font-sans-ui md:col-span-2', form && 'flex flex-col gap-2')}>{children}</div>
+      <div className={cn('text-sm font-sans-ui md:col-span-2', form && 'flex flex-col gap-4')}>{children}</div>
     </div>
   )
 }

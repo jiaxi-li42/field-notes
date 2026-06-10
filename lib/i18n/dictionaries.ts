@@ -57,7 +57,11 @@ export type Dictionary = {
   }
   auth: {
     login: string
+    login_title: string
+    login_subtitle: string
     register: string
+    register_title: string
+    register_subtitle: string
     username: string
     password: string
     confirm_password: string
@@ -68,6 +72,9 @@ export type Dictionary = {
     password_mismatch: string
     register_error: string
     logout: string
+    rate_limited: string
+    login_pending: string
+    register_pending: string
     no_account: string
     have_account: string
   }

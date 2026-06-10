@@ -1,12 +1,24 @@
 'use server'
 
+import { headers } from 'next/headers'
 import { hash } from 'bcryptjs'
 import { eq } from 'drizzle-orm'
 import { db } from '@/lib/db'
 import { users } from '@/lib/db/schema'
 import { signIn } from '@/lib/auth'
+import { rateLimit } from '@/lib/rate-limit'
+
+async function getClientIp(): Promise<string> {
+  const h = await headers()
+  return h.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown'
+}
 
 export async function register(formData: FormData): Promise<{ error?: string }> {
+  const ip = await getClientIp()
+  if (!rateLimit(`register:${ip}`, 5, 60 * 60 * 1000)) {
+    return { error: 'rate_limited' }
+  }
+
   const username = (formData.get('username') as string)?.trim()
   const password = formData.get('password') as string
 
@@ -44,6 +56,11 @@ export async function register(formData: FormData): Promise<{ error?: string }> 
 }
 
 export async function login(formData: FormData): Promise<{ error?: string }> {
+  const ip = await getClientIp()
+  if (!rateLimit(`login:${ip}`, 10, 15 * 60 * 1000)) {
+    return { error: 'rate_limited' }
+  }
+
   const username = formData.get('username') as string
   const password = formData.get('password') as string
 

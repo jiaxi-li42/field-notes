@@ -70,7 +70,11 @@
   },
   "auth": {
     "login": "登录",
+    "login_title": "欢迎回来",
+    "login_subtitle": "登录以继续你的收藏",
     "register": "注册",
+    "register_title": "创建你的账户",
+    "register_subtitle": "开始记录万物生灵",
     "username": "用户名",
     "password": "密码",
     "confirm_password": "确认密码",
@@ -80,9 +84,12 @@
     "password_short": "密码至少6个字符",
     "password_mismatch": "两次密码不一致",
     "register_error": "出了点问题，请重试。",
+    "rate_limited": "尝试次数过多，请稍后再试。",
+    "login_pending": "登录中…",
+    "register_pending": "注册中…",
     "logout": "退出登录",
-    "no_account": "还没有账号？",
-    "have_account": "已有账号？"
+    "no_account": "还没有账户？",
+    "have_account": "已有账户？"
   },
   "form": {
     "species_placeholder": "输入英文俗名或学名…",

@@ -414,7 +414,7 @@ export function CollectionView({
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
     <div
-      className="mx-auto max-w-sm md:max-w-2xl flex flex-col"
+      className="mx-auto max-w-md md:max-w-2xl flex flex-col"
       style={isCircle ? { height: 'calc(100vh - 5rem)' } : undefined}
     >
       {/* ── Toolbar: filter (left) + switch view / exit fullscreen (right) ──── */}
@@ -572,7 +572,7 @@ export function CollectionView({
               const isFocused = zoomed && focusedIdx === i
               const imageContent = (
                 <div className={cn('h-full w-full', zoomed && 'stamp-card-lg')}>
-                  <div className={cn('h-full w-full', zoomed && 'p-2')}>
+                  <div className={cn('h-full w-full', zoomed && 'p-1 md:p-2')}>
                     <div className="h-full w-full overflow-hidden bg-neutral-200">
                       {card.photoUrl ? (
                         // eslint-disable-next-line @next/next/no-img-element

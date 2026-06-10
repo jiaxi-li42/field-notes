@@ -4,7 +4,8 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { AuthField } from '@/components/auth/AuthField'
 import { login } from '@/app/actions/auth'
 import { langPrefix } from '@/lib/utils/i18n'
 
@@ -15,6 +16,8 @@ interface LoginFormProps {
     username: string
     password: string
     login_error: string
+    rate_limited: string
+    login_pending: string
     no_account: string
     register: string
   }
@@ -34,7 +37,7 @@ export function LoginForm({ lang, dict }: LoginFormProps) {
     startTransition(async () => {
       const result = await login(formData)
       if (result.error) {
-        setError(dict.login_error)
+        setError(result.error === 'rate_limited' ? dict.rate_limited : dict.login_error)
       } else {
         router.push(prefix || '/')
       }
@@ -42,19 +45,25 @@ export function LoginForm({ lang, dict }: LoginFormProps) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="space-y-2">
-        <label htmlFor="username" className="text-sm font-medium">{dict.username}</label>
-        <Input id="username" name="username" required autoComplete="username" className="text-sm" />
-      </div>
-      <div className="space-y-2">
-        <label htmlFor="password" className="text-sm font-medium">{dict.password}</label>
-        <Input id="password" name="password" type="password" required autoComplete="current-password" className="text-sm" />
-      </div>
-      {error && <p className="text-sm text-destructive">{error}</p>}
-      <Button type="submit" className="w-full" disabled={isPending}>
-        {isPending ? '…' : dict.login}
-      </Button>
+    <form onSubmit={handleSubmit} className="flex flex-col gap-8 font-sans-ui">
+      <AuthField id="username" label={dict.username} autoComplete="username" />
+      <AuthField id="password" label={dict.password} type="password" autoComplete="current-password" />
+      <Popover open={!!error} onOpenChange={(open) => { if (!open) setError(null) }}>
+        <PopoverTrigger
+          render={
+            <Button
+              type="submit"
+              className="w-full bg-neutral-100 font-sans lowercase text-foreground hover:bg-neutral-200"
+              disabled={isPending}
+            />
+          }
+        >
+          {isPending ? dict.login_pending : dict.login}
+        </PopoverTrigger>
+        <PopoverContent side="top" sideOffset={8} align="end" className="font-sans-ui shadow-none ring-0 bg-neutral-100 w-auto max-w-[var(--anchor-width)]">
+          <p className="text-sm text-destructive">{error}</p>
+        </PopoverContent>
+      </Popover>
       <p className="text-center text-sm text-muted-foreground">
         {dict.no_account}{' '}
         <Link href={`${prefix}/register`} className="underline underline-offset-2 hover:text-foreground">

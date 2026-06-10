@@ -43,13 +43,8 @@ export default async function RecordingDetailPage({
   return (
     <main className="min-h-screen bg-white">
       <PageHeader
+        className="h-15 py-0"
         left={
-          <BackButton
-            label={dict.detail.return}
-            className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }), 'px-2 lowercase')}
-          />
-        }
-        right={
           <DetailActions
             recordingId={id}
             redirectTo={base}
@@ -65,6 +60,12 @@ export default async function RecordingDetailPage({
             }}
           />
         }
+        right={
+          <BackButton
+            label={dict.detail.return}
+            className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }), 'px-2 lowercase')}
+          />
+        }
       />
 
       {/* Mobile carousel — full width, at top */}
@@ -75,7 +76,7 @@ export default async function RecordingDetailPage({
       )}
 
       {/* Content */}
-      <div className={cn("mx-auto max-w-sm md:max-w-2xl px-4 md:pt-16 pb-8", photos.length > 0 ? "pt-8" : "pt-15")}>
+      <div className={cn("mx-auto max-w-md md:max-w-2xl px-4 md:pt-15", photos.length > 0 ? "pt-8" : "pt-15")}>
         {/* Species name + canonical name */}
         <div className="pb-4 gap-1 flex flex-col">
           <h1 className="text-2xl tracking-tight">{displayName}</h1>

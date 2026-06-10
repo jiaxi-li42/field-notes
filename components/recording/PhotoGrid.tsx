@@ -13,7 +13,8 @@ import {
   TooltipContent,
 } from '@/components/ui/tooltip'
 import { MdIcon } from '@/components/ui/MdIcon'
-import { PHOTO_ROTATIONS } from '@/lib/utils/photo'
+import { Lightbox } from '@/components/recording/Lightbox'
+import { ROTATIONS } from '@/lib/utils/photo'
 
 interface PhotoItem {
   id: string
@@ -58,7 +59,7 @@ function CaptionIcon({ caption }: { caption: string }) {
 export function PhotoCarousel({ photos }: PhotoProps) {
   const [api, setApi] = useState<CarouselApi>()
   const [current, setCurrent] = useState(0)
-  const [lightbox, setLightbox] = useState<{ url: string; caption: string } | null>(null)
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
 
   useEffect(() => {
     if (!api) return
@@ -74,7 +75,7 @@ export function PhotoCarousel({ photos }: PhotoProps) {
     <>
       <Carousel setApi={setApi}>
         <CarouselContent className="ml-0">
-          {photos.map((photo) => (
+          {photos.map((photo, i) => (
             <CarouselItem key={photo.id} className="pl-0">
               <div className="relative">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -83,7 +84,7 @@ export function PhotoCarousel({ photos }: PhotoProps) {
                   alt={photo.caption}
                   width={photo.width}
                   height={photo.height}
-                  onClick={() => setLightbox({ url: photo.url, caption: photo.caption })}
+                  onClick={() => setLightboxIndex(i)}
                   className="w-full aspect-square object-cover cursor-pointer"
                 />
                 <CaptionIcon caption={photo.caption} />
@@ -100,24 +101,12 @@ export function PhotoCarousel({ photos }: PhotoProps) {
         )}
       </Carousel>
 
-      {/* Lightbox — tap to see original */}
-      {lightbox && (
-        <div
-          className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-black/90"
-          onClick={() => setLightbox(null)}
-        >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={lightbox.url}
-            alt=""
-            className="max-h-[80vh] max-w-full object-contain"
-          />
-          {lightbox.caption && (
-            <p className="mt-4 max-w-sm px-4 text-center text-sm text-white font-sans-ui">
-              {lightbox.caption}
-            </p>
-          )}
-        </div>
+      {lightboxIndex !== null && (
+        <Lightbox
+          photos={photos}
+          startIndex={lightboxIndex}
+          onClose={() => setLightboxIndex(null)}
+        />
       )}
     </>
   )
@@ -128,34 +117,47 @@ export function PhotoCarousel({ photos }: PhotoProps) {
 /* ------------------------------------------------------------------ */
 
 export function PhotoGrid({ photos }: PhotoProps) {
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
+
   if (photos.length === 0) return null
 
   return (
-    <div className="grid grid-cols-2 gap-8">
-      {photos.map((photo, i) => {
-        const ratio = photo.width && photo.height ? photo.width / photo.height : 1
-        const landscape = ratio > 1.1
-        const square = !landscape && ratio >= 0.9
-        const rotate = PHOTO_ROTATIONS[i % PHOTO_ROTATIONS.length]
-        return (
-          <figure
-            key={photo.id}
-            className={`relative ${landscape ? 'col-span-2' : ''}`}
-            style={{ transform: `rotate(${rotate}deg)` }}
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={photo.url}
-              alt={photo.caption}
-              width={photo.width}
-              height={photo.height}
-              loading="lazy"
-              className={`w-full object-cover ${landscape ? 'aspect-[4/3]' : square ? 'aspect-square' : 'aspect-[3/4]'}`}
-            />
-            <CaptionIcon caption={photo.caption} />
-          </figure>
-        )
-      })}
-    </div>
+    <>
+      <div className="grid grid-cols-2 gap-8">
+        {photos.map((photo, i) => {
+          const ratio = photo.width && photo.height ? photo.width / photo.height : 1
+          const landscape = ratio > 1.1
+          const square = !landscape && ratio >= 0.9
+          const rotate = ROTATIONS[i % ROTATIONS.length]
+          return (
+            <figure
+              key={photo.id}
+              className={`relative cursor-pointer ${landscape ? 'col-span-2' : ''}`}
+              style={{ transform: `rotate(${rotate}deg)` }}
+              onClick={() => setLightboxIndex(i)}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={photo.url}
+                alt={photo.caption}
+                width={photo.width}
+                height={photo.height}
+                loading="lazy"
+                className={`w-full object-cover ${landscape ? 'aspect-[4/3]' : square ? 'aspect-square' : 'aspect-[3/4]'}`}
+              />
+              <CaptionIcon caption={photo.caption} />
+            </figure>
+          )
+        })}
+      </div>
+
+      {lightboxIndex !== null && (
+        <Lightbox
+          photos={photos}
+          startIndex={lightboxIndex}
+          onClose={() => setLightboxIndex(null)}
+        />
+      )}
+    </>
   )
 }

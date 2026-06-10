@@ -5,7 +5,7 @@ const locales = ['en', 'zh'] as const
 
 const meta: Record<string, { title: string; description: string }> = {
   en: { title: 'The Dandelion — Your nature field notes', description: 'Observe, record, and share the nature around you.' },
-  zh: { title: '蒲公英 — 你的自然观察笔记', description: '观察，记录，分享你眼中的自然。' },
+  zh: { title: 'The Dandelion — 你的自然观察笔记', description: '观察，记录，分享你眼中的自然。' },
 }
 
 export async function generateStaticParams() {

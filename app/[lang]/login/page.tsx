@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { auth } from '@/lib/auth'
 import { getDictionary } from '@/lib/i18n/dictionaries'
+import { AuthLayout } from '@/components/auth/AuthLayout'
 import { LoginForm } from '@/components/auth/LoginForm'
 import { langPrefix } from '@/lib/utils/i18n'
 
@@ -16,11 +17,8 @@ export default async function LoginPage({
   const dict = await getDictionary(lang)
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-neutral-100 px-4">
-      <div className="w-full max-w-sm space-y-6">
-        <h1 className="text-center text-2xl tracking-tight">{dict.auth.login}</h1>
-        <LoginForm lang={lang} dict={dict.auth} />
-      </div>
-    </main>
+    <AuthLayout title={dict.auth.login_title} subtitle={dict.auth.login_subtitle}>
+      <LoginForm lang={lang} dict={dict.auth} />
+    </AuthLayout>
   )
 }

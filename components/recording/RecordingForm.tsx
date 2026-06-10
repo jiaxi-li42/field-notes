@@ -22,13 +22,14 @@ import {
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { TaxonomySearch, type GBIFSuggestion } from '@/components/taxonomy/TaxonomySearch'
 import { PageHeader } from '@/components/shell/PageHeader'
+import { BackButton } from '@/components/shell/BackButton'
 import { Section } from '@/components/shell/Section'
 import { createRecording, updateRecording } from '@/app/actions/recordings'
 import { formatDate } from '@/lib/utils/date'
 import { cn } from '@/lib/utils'
 import { langPrefix } from '@/lib/utils/i18n'
 import type { Dictionary } from '@/lib/i18n/dictionaries'
-import { PHOTO_ROTATIONS } from '@/lib/utils/photo'
+import { ROTATIONS } from '@/lib/utils/photo'
 
 interface UploadedPhoto {
   id: string
@@ -276,16 +277,13 @@ export function RecordingForm({ lang, dict, initialData }: RecordingFormProps) {
   return (
     <form onSubmit={handleSubmit} noValidate onClick={() => setActivePhotoIndex(null)}>
       <PageHeader
-        left={<h1 className="text-2xl tracking-tight">{isEdit ? dict.nav.edit : dict.nav.new}</h1>}
+        className="h-15 py-0"
         right={
-          <>
-            <button
-              type="button"
-              onClick={() => router.back()}
+          <div className="flex items-center gap-1">
+            <BackButton
+              label={dict.actions.cancel}
               className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }), 'px-2 lowercase')}
-            >
-              {dict.actions.cancel}
-            </button>
+            />
             <Button
               type="submit"
               variant="ghost"
@@ -295,12 +293,12 @@ export function RecordingForm({ lang, dict, initialData }: RecordingFormProps) {
             >
               {isPending ? dict.actions.saving : dict.actions.save}
             </Button>
-          </>
+          </div>
         }
       />
 
       {/* Content */}
-      <div className="mx-auto max-w-sm md:max-w-2xl px-4 pt-16 pb-4">
+      <div className="mx-auto max-w-md md:max-w-2xl px-4 pt-15">
         <div>
 
           {/* Species */}
@@ -335,9 +333,6 @@ export function RecordingForm({ lang, dict, initialData }: RecordingFormProps) {
                           <span className="text-sm text-muted-foreground font-sans-ui italic">{selectedSpecies.canonicalName}</span>
                         )}
                       </div>
-                      {selectedSpecies.kingdom && (
-                        <span className="shrink-0 text-sm text-muted-foreground">{selectedSpecies.kingdom}</span>
-                      )}
                     </div>
                   </div>
                 )
@@ -378,7 +373,7 @@ export function RecordingForm({ lang, dict, initialData }: RecordingFormProps) {
 
             {/* Taxonomy inputs — always visible in edit mode, manual toggle in create mode */}
             {selectedSpecies && (isEdit || manualTaxonomy) && (
-              <div className="flex flex-col pt-2 gap-3">
+              <div className="flex flex-col gap-4">
                 <LabeledField label={dict.form.common_name}>
                   <Input
                     value={nameFields.common}
@@ -426,9 +421,13 @@ export function RecordingForm({ lang, dict, initialData }: RecordingFormProps) {
           <Section form label={dict.recording.notes}>
             <Textarea
               value={notes}
-              onChange={(e) => setNotes(e.target.value)}
+              onChange={(e) => {
+                setNotes(e.target.value)
+                e.target.style.height = 'auto'
+                e.target.style.height = `${e.target.scrollHeight}px`
+              }}
               placeholder={dict.form.notes_placeholder}
-              className={fieldInputClass}
+              className={`${fieldInputClass} resize-none overflow-hidden`}
               rows={4}
             />
           </Section>
@@ -492,7 +491,7 @@ export function RecordingForm({ lang, dict, initialData }: RecordingFormProps) {
                 <div
                   key={photo.id}
                   className="flex flex-col items-center gap-1"
-                  style={{ transform: `rotate(${PHOTO_ROTATIONS[i % PHOTO_ROTATIONS.length]}deg)` }}
+                  style={{ transform: `rotate(${ROTATIONS[i % ROTATIONS.length]}deg)` }}
                 >
                   <div
                     className="group/photo relative aspect-square w-full overflow-hidden rounded-xl"

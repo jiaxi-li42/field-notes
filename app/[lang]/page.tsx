@@ -1,3 +1,4 @@
+import { Fragment } from 'react'
 import { redirect } from 'next/navigation'
 import { auth } from '@/lib/auth'
 import { getDictionary } from '@/lib/i18n/dictionaries'
@@ -8,9 +9,7 @@ import { CollectionView } from '@/components/collection/CollectionView'
 import { Empty, EmptyHeader, EmptyTitle, EmptyDescription } from '@/components/ui/empty'
 import type { Kingdom } from '@/lib/models/Species'
 import { langPrefix } from '@/lib/utils/i18n'
-
-// Pseudo-random scatter angles (degrees). Cycle through these per card position.
-const STAMP_ROTATIONS = [-2.3, 1.8, -1.2, 2.7, -0.7, 1.4, -2.1, 0.9, -1.6, 2.4, -0.4, 1.1]
+import { ROTATIONS } from '@/lib/utils/photo'
 
 
 export default async function HomePage({
@@ -128,15 +127,22 @@ export default async function HomePage({
               </EmptyHeader>
             </Empty>
           ) : (
-            <div className="grid grid-cols-3 md:grid-cols-5 gap-x-2 gap-y-4 p-4">
+            <div className="grid grid-cols-3 md:grid-cols-5 gap-x-2 p-4">
               {gridRecordings.map((r, i) => (
-                <StampCard
-                  key={r.id}
-                  recording={r}
-                  lang={lang}
-                  href={`${basePath}/collection/${r.id}`}
-                  rotate={STAMP_ROTATIONS[i % STAMP_ROTATIONS.length]}
-                />
+                <Fragment key={r.id}>
+                  {i > 0 && i % 3 === 0 && (
+                    <hr className="col-span-full md:hidden my-4 border-border" />
+                  )}
+                  {i > 0 && i % 5 === 0 && (
+                    <hr className="hidden md:block col-span-full my-4 border-border" />
+                  )}
+                  <StampCard
+                    recording={r}
+                    lang={lang}
+                    href={`${basePath}/collection/${r.id}`}
+                    rotate={ROTATIONS[i % ROTATIONS.length]}
+                  />
+                </Fragment>
               ))}
             </div>
           )}
